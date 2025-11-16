@@ -1,0 +1,122 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Programs - SIS{% endblock %}
+
+{% block content %}
+<div class="container align-self-start py-4">
+
+  <h3 class="text-center mb-4">Program Details</h3>
+
+  <!-- Search + Add -->
+  <div class="d-flex justify-content-center mb-3 gap-3 flex-column flex-sm-row align-items-center">
+    <div style="min-width:260px; max-width:420px; width:40%">
+      <input id="program-search" class="form-control" placeholder="Search program...">
+    </div>
+
+    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#programModal">
+      Add New Program
+    </button>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="mb-3 mx-auto" style="max-width:600px;">
+    {% for category, msg in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Table -->
+  <div class="card mx-auto" style="max-width:1000px;">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width:15%">Code</th>
+              <th>Name</th>
+              <th style="width:25%">College</th>
+              <th style="width:15%">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="programs-table-body">
+            <!-- JS will populate table rows dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add/Edit Program Modal -->
+<div class="modal fade" id="programModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form id="programForm" method="POST" action="{{ url_for('user.programs') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="modal-header">
+          <h5 class="modal-title">Program Information</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+
+          <!-- Program Code -->
+          <div class="mb-3">
+            {{ form.code.label(class="form-label") }}
+            {{ form.code(class="form-control", placeholder="e.g. BSCS") }}
+            {% for err in form.code.errors %}
+              <div class="text-danger small">{{ err }}</div>
+            {% endfor %}
+          </div>
+
+          <!-- Program Name -->
+          <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control", placeholder="Bachelor of Science in Computer Science") }}
+            {% for err in form.name.errors %}
+              <div class="text-danger small">{{ err }}</div>
+            {% endfor %}
+          </div>
+
+          <!-- College Select -->
+          <div class="mb-3">
+            {{ form.college_id.label(class="form-label") }}
+            {{ form.college_id(class="form-select") }}
+            {% for err in form.college_id.errors %}
+              <div class="text-danger small">{{ err }}</div>
+            {% endfor %}
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          {{ form.submit(class="btn btn-primary") }}
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+<!-- Backend → JS Data -->
+{% block scripts %}
+<script>
+  // Initialize programs and colleges from backend for JS table handling
+  window.INIT_PROGRAMS = {{ (programs or []) | tojson | safe }};
+  window.INIT_COLLEGES = {{ (colleges or []) | tojson | safe }};
+</script>
+
+<script src="{{ url_for('static', filename='js/programs.js') }}"></script>
+{% endblock %}

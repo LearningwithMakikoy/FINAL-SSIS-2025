@@ -1,0 +1,42 @@
+{% extends "layouts/base.html" %}
+{% block title %}Create Admin - SIS{% endblock %}
+
+{% block content %}
+<div class="card shadow" style="width: 600px;">
+  <div class="card-header">
+    <h5 class="m-0">Create New Admin</h5>
+  </div>
+
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          {{ form.username.label(class="form-label") }}
+          {{ form.username(class="form-control", placeholder="Username") }}
+          {% if form.username.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.username.errors[0] }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+          {{ form.password.label(class="form-label") }}
+          {{ form.password(class="form-control", placeholder="Password") }}
+          {% if form.password.errors %}
+            <div class="text-danger small mt-1">
+              {{ form.password.errors[0] }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <button class="btn btn-success w-100" type="submit">Create Admin</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
