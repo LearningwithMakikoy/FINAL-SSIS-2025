@@ -1,23 +1,62 @@
 
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required
+from werkzeug.security import generate_password_hash, check_password_hash
 from . import bp
 from .forms import StudentForm, ProgramForm, CollegeForm
 from app.models import Student, Program, College
+from app.database import get_connection
 
-
-# -------------------------
 # DASHBOARD / INDEX
-# -------------------------
+
 @bp.route('/')
 @login_required
 def index():
     return render_template('layouts/index.html')
 
 
-# -------------------------
+# create user/signup
+
+def create_user(username, email,password):
+    conn= get_connection()
+    cur = conn.cursor()
+
+    try:
+        hashed = generate_password_hash(password)
+
+        cur.execute("""
+            INSERT INTO users (username, email, password_hash)
+            VALUES (%s, %s, %s)
+            RETURNING id;
+        """, (username, email, hashed))
+
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        return user_id
+
+    except Exception:
+        conn.rollback()
+        return None
+
+    finally:
+        cur.close()
+        conn.close()
+
+
+def get_user_by_username(username):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+    user = cur.fetchone()
+
+    cur.close()
+    conn.close()
+    return user  
+
+
 # PROGRAM ROUTES
-# -------------------------
+
 @bp.route('/programs', methods=['GET', 'POST'])
 @login_required
 def programs():
