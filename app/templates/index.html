@@ -1,0 +1,56 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Dashboard - SIS{% endblock %}
+
+{% block content %}
+{% if current_user.is_authenticated %}
+<div class="container py-4">
+  <div class="row gx-4 gy-4 justify-content-center">
+
+    <!-- Student Card -->
+    <div class="col-md-4">
+      <div class="card bg-primary text-white h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center">
+          <h2 class="fw-bold mb-2 text-capitalize">Student</h2>
+          <i class="fa fa-users fa-4x mb-3"></i>
+          <a class="btn btn-outline-light btn-lg mt-auto" href="{{ url_for('user.students') }}">
+            Student Info
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Program Card -->
+    <div class="col-md-4">
+      <div class="card bg-success text-white h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center">
+          <h2 class="fw-bold mb-2 text-capitalize">Program</h2>
+          <i class="fa fa-graduation-cap fa-4x mb-3"></i>
+          <a class="btn btn-outline-light btn-lg mt-auto" href="{{ url_for('user.programs') }}">
+            Program Info
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- College Card -->
+    <div class="col-md-4">
+      <div class="card bg-warning text-dark h-100">
+        <div class="card-body d-flex flex-column align-items-center text-center">
+          <h2 class="fw-bold mb-2 text-capitalize">College</h2>
+          <i class="fa fa-university fa-4x mb-3"></i>
+          <a class="btn btn-outline-dark btn-lg mt-auto" href="{{ url_for('user.colleges') }}">
+            College Info
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <h3>Welcome to the Student Information System</h3>
+    <p>Please <a href="{{ url_for('user.login') }}">login</a> to access the dashboard.</p>
+</div>
+{% endif %}
+{% endblock %}

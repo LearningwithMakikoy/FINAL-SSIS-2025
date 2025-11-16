@@ -1,0 +1,55 @@
+{% extends 'layouts/base.html' %}
+{% block title %}Sign Up - SIS{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-4">
+
+      <h2 class="text-center mb-4">Create Account</h2>
+
+      <form method="POST" action="{{ url_for('user.signup') }}">
+        {{ form.hidden_tag() }}
+
+        <!-- Username -->
+        <div class="mb-3">
+          {{ form.username.label(class="form-label") }}
+          {{ form.username(class="form-control", placeholder="Enter username") }}
+          {% for err in form.username.errors %}
+            <div class="text-danger small">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Email -->
+        <div class="mb-3">
+          {{ form.email.label(class="form-label") }}
+          {{ form.email(class="form-control", placeholder="Enter email") }}
+          {% for err in form.email.errors %}
+            <div class="text-danger small">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Password -->
+        <div class="mb-3">
+          {{ form.password.label(class="form-label") }}
+          {{ form.password(class="form-control", placeholder="Enter password") }}
+          {% for err in form.password.errors %}
+            <div class="text-danger small">{{ err }}</div>
+          {% endfor %}
+        </div>
+
+        <!-- Submit -->
+        {{ form.submit(class="btn btn-primary w-100") }}
+
+        <div class="text-center mt-3">
+          <a href="{{ url_for('user.login') }}">Already have an account?</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,63 @@
+body {
+  background: #fff7ef;
+  color: #333;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* header look */
+.site-header .navbar {
+  background: #ffd8db;
+  padding: 1rem 0;
+}
+.site-header .navbar-brand { color: #111; }
+.site-header .nav-link { color: white; font-weight: 700; opacity: .95; }
+
+/* big feature cards */
+.card-feature {
+  border-radius: 28px;
+  color: #fff;
+  min-height: 220px;
+}
+.student-card { background: #cbd5ff; color: #fff; }
+.program-card { background: #ffc7a8; color: #fff; }
+.college-card { background: #d9b4ff; color: #fff; }
+
+.card-feature .btn-outline-light {
+  border-color: rgba(255,255,255,0.85);
+  color: white;
+  font-weight: 700;
+}
+
+/* login */
+.login-card {
+  width: 560px;
+  background: transparent;
+  border: none;
+}
+.avatar-placeholder {
+  width: 96px; height: 96px;
+  background: #444;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+
+/* students table card */
+.card .card-header { background: #f8f9fb; }
+
+/* rounded input look on login */
+.form-control.form-control-lg.rounded-pill {
+  border: 4px solid #4b4b4b;
+  padding: 1rem 1.6rem;
+}
+
+/* modal broad */
+.modal-content { border-radius: 6px; }
+
+/* footers etc */
+footer { color: #6b6b6b; }
+
+/* small responsive tweak */
+@media (max-width: 768px) {
+  .login-card { width: 95%; padding: 2rem; }
+  .card-feature { min-height: 180px; }
+}
