@@ -1,11 +1,12 @@
-# app/models.py
 from flask_login import UserMixin
 from .database import get_connection
 from werkzeug.security import generate_password_hash
+from psycopg2.extras import RealDictCursor
 
-# ------------------------------
-# User Model
-# ------------------------------
+
+
+# USER MODEL
+
 class User(UserMixin):
     def __init__(self, id, username, email, password_hash):
         self.id = id
@@ -13,64 +14,63 @@ class User(UserMixin):
         self.email = email
         self.password_hash = password_hash
 
-    def __repr__(self):
-        return f"<User {self.username}>"
-
     @staticmethod
     def get_by_id(user_id):
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, username, email, password_hash FROM users WHERE id = %s;", (user_id,))
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, username, email, password_hash
+            FROM users
+            WHERE id = %s;
+        """, (user_id,))
         row = cur.fetchone()
         cur.close()
         conn.close()
         if row:
-            return User(*row)
+            return User(row["id"], row["username"], row["email"], row["password_hash"])
         return None
 
     @staticmethod
     def get_by_username(username):
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT id, username, email, password_hash FROM users WHERE username = %s;", (username,))
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, username, email, password_hash
+            FROM users
+            WHERE username = %s;
+        """, (username,))
         row = cur.fetchone()
         cur.close()
         conn.close()
         if row:
-            return User(*row)
+            return User(row["id"], row["username"], row["email"], row["password_hash"])
         return None
 
     @staticmethod
     def create(username, email, password_hash):
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id;",
-            (username, email, password_hash)
-        )
-        user_id = cur.fetchone()[0]
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            INSERT INTO users (username, email, password_hash)
+            VALUES (%s, %s, %s)
+            RETURNING id;
+        """, (username, email, password_hash))
+        user_id = cur.fetchone()["id"]
         conn.commit()
         cur.close()
         conn.close()
         return User.get_by_id(user_id)
 
 
-# ------------------------------
-# Student Model
-# ------------------------------
+
+# STUDENT MODEL
+
 class Student:
-    def __init__(self, id, firstname, lastname, course, year, gender):
-        self.id = id
-        self.firstname = firstname
-        self.lastname = lastname
-        self.course = course
-        self.year = year
-        self.gender = gender
 
     @staticmethod
     def all():
         conn = get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
             SELECT s.id, s.firstname, s.lastname, s.course, s.year, s.gender,
                    p.name AS program_name
@@ -78,25 +78,25 @@ class Student:
             LEFT JOIN program p ON s.course = p.code
             ORDER BY s.id;
         """)
-        students = cur.fetchall()
+        rows = cur.fetchall()
         cur.close()
         conn.close()
-        return students
+        return rows
 
     @staticmethod
     def get_by_id(student_id):
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT * FROM student WHERE id=%s;", (student_id,))
-        student = cur.fetchone()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM student WHERE id = %s;", (student_id,))
+        row = cur.fetchone()
         cur.close()
         conn.close()
-        return student
+        return row
 
     @staticmethod
     def create(id, firstname, lastname, course, year, gender):
         conn = get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
             INSERT INTO student (id, firstname, lastname, course, year, gender)
             VALUES (%s, %s, %s, %s, %s, %s);
@@ -123,48 +123,51 @@ class Student:
     def delete(id):
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("DELETE FROM student WHERE id=%s;", (id,))
+        cur.execute("DELETE FROM student WHERE id = %s;", (id,))
         conn.commit()
         cur.close()
         conn.close()
 
 
-
-# ------------------------------
-# Program Model
-# ------------------------------
+# PROGRAM MODEL
 class Program:
-    def __init__(self, code, name, college):
-        self.code = code
-        self.name = name
-        self.college = college
 
     @staticmethod
     def all():
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT code, name, college FROM program ORDER BY name;")
-        programs = cur.fetchall()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT code, name, college
+            FROM program
+            ORDER BY name;
+        """)
+        rows = cur.fetchall()
         cur.close()
         conn.close()
-        return programs
+        return rows
 
     @staticmethod
     def get_by_code(code):
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT code, name, college FROM program WHERE code=%s;", (code,))
-        program = cur.fetchone()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT code, name, college
+            FROM program
+            WHERE code=%s;
+        """, (code,))
+        row = cur.fetchone()
         cur.close()
         conn.close()
-        return program
+        return row
 
     @staticmethod
     def create(code, name, college):
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("INSERT INTO program (code, name, college) VALUES (%s, %s, %s);",
-                    (code, name, college))
+        cur.execute("""
+            INSERT INTO program (code, name, college)
+            VALUES (%s, %s, %s);
+        """, (code, name, college))
         conn.commit()
         cur.close()
         conn.close()
@@ -174,8 +177,11 @@ class Program:
     def update(code, name, college):
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("UPDATE program SET name=%s, college=%s WHERE code=%s;",
-                    (name, college, code))
+        cur.execute("""
+            UPDATE program
+            SET name=%s, college=%s
+            WHERE code=%s;
+        """, (name, college, code))
         conn.commit()
         cur.close()
         conn.close()
@@ -184,45 +190,52 @@ class Program:
     def delete(code):
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("DELETE FROM program WHERE code=%s;", (code,))
+        cur.execute("DELETE FROM program WHERE code = %s;", (code,))
         conn.commit()
         cur.close()
         conn.close()
 
 
-# ------------------------------
-# College Model
-# ------------------------------
+
+# COLLEGE MODEL
 class College:
-    def __init__(self, code, name):
-        self.code = code
-        self.name = name
 
     @staticmethod
     def all():
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT code, name FROM college ORDER BY name;")
-        colleges = cur.fetchall()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT code, name
+            FROM college
+            ORDER BY name;
+        """)
+        rows = cur.fetchall()
         cur.close()
         conn.close()
-        return colleges
+        return rows
 
     @staticmethod
     def get_by_code(code):
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT code, name FROM college WHERE code=%s;", (code,))
-        college = cur.fetchone()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT code, name
+            FROM college
+            WHERE code=%s;
+        """, (code,))
+        row = cur.fetchone()
         cur.close()
         conn.close()
-        return college
+        return row
 
     @staticmethod
     def create(code, name):
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("INSERT INTO college (code, name) VALUES (%s, %s);", (code, name))
+        cur.execute("""
+            INSERT INTO college (code, name)
+            VALUES (%s, %s);
+        """, (code, name))
         conn.commit()
         cur.close()
         conn.close()
@@ -232,7 +245,11 @@ class College:
     def update(code, name):
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("UPDATE college SET name=%s WHERE code=%s;", (name, code))
+        cur.execute("""
+            UPDATE college
+            SET name=%s
+            WHERE code=%s;
+        """, (name, code))
         conn.commit()
         cur.close()
         conn.close()
@@ -241,7 +258,7 @@ class College:
     def delete(code):
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("DELETE FROM college WHERE code=%s;", (code,))
+        cur.execute("DELETE FROM college WHERE code = %s;", (code,))
         conn.commit()
         cur.close()
         conn.close()

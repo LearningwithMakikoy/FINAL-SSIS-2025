@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!college) return;
       if (!confirm(`Delete college ${college.name}?`)) return;
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
-      fetch(`/user/colleges/delete/${college.id}`, {
+      fetch(`/user/colleges/delete/${college.code}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +45,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }).then(r => r.json()).then(data => {
         if (data && data.success) {
-          colleges.splice(index, 1);
+          const collegeIndex = colleges.findIndex(c => c.code === college.code);
+          if (collegeIndex !== -1) {
+            colleges.splice(collegeIndex, 1);
+          }
           renderTable();
           showAlert('success', data.message || 'College deleted');
         } else {
@@ -58,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (action === 'edit') {
       const college = colleges[index];
       if (form) {
-        if (form.elements['id']) form.elements['id'].value = college.id || '';
+        if (form.elements['id']) form.elements['id'].value = college.code || '';
         if (form.elements['code']) form.elements['code'].value = college.code || '';
         if (form.elements['name']) form.elements['name'].value = college.name || '';
       }

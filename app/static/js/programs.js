@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!prog) return;
       if (!confirm(`Delete program ${prog.name}?`)) return;
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
-      fetch(`/user/programs/delete/${prog.id}`, {
+      fetch(`/user/programs/delete/${prog.code}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,7 +51,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }).then(r => r.json()).then(data => {
         if (data && data.success) {
-          programs.splice(index, 1);
+          const programIndex = programs.findIndex(p => p.code === prog.code);
+          if (programIndex !== -1) {
+            programs.splice(programIndex, 1);
+          }
           renderTable();
           showAlert('success', data.message || 'Program deleted');
         } else {
@@ -64,10 +67,10 @@ document.addEventListener('DOMContentLoaded', function() {
     } else if (action === 'edit') {
       const program = programs[index];
       if (form) {
-        if (form.elements['id']) form.elements['id'].value = program.id || '';
+        if (form.elements['id']) form.elements['id'].value = program.code || '';
         if (form.elements['code']) form.elements['code'].value = program.code || '';
         if (form.elements['name']) form.elements['name'].value = program.name || '';
-        if (form.elements['college_id']) form.elements['college_id'].value = program.college_id || '';
+        if (form.elements['college_id']) form.elements['college_id'].value = program.college || '';
       }
       new bootstrap.Modal(document.querySelector('#programModal')).show();
     }
@@ -76,9 +79,9 @@ document.addEventListener('DOMContentLoaded', function() {
   searchInput.addEventListener('input', function() {
     const q = this.value.toLowerCase();
     const filtered = programs.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.code.toLowerCase().includes(q) ||
-      p.college.toLowerCase().includes(q)
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.code || '').toLowerCase().includes(q) ||
+      (p.college || '').toLowerCase().includes(q)
     );
     renderTable(filtered);
   });

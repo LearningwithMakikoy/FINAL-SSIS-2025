@@ -88,7 +88,7 @@
 
             <div class="col-md-6">
               {{ form.id_number.label(class="form-label") }}
-              {{ form.id_number(class="form-control", placeholder="2023-1234") }}
+              {{ form.id_number(class="form-control", placeholder="2023-1234", pattern="\\d{4}-\\d{4}", maxlength="9", title="Format: YYYY-NNNN (e.g., 2023-1234)") }}
               {% for err in form.id_number.errors %}
                 <div class="text-danger small">{{ err }}</div>
               {% endfor %}

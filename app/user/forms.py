@@ -1,10 +1,10 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, SubmitField, HiddenField, PasswordField
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired, Length, Regexp
 
 class LoginForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired(), Length(max=50)])
-    password = StringField("Password", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])
     submit = SubmitField("Login")
 
 class SignupForm(FlaskForm):
@@ -28,7 +28,14 @@ class CollegeForm(FlaskForm):
 
 class StudentForm(FlaskForm):
     id = HiddenField()
-    id_number = StringField("Student ID", validators=[DataRequired(), Length(max=10)])
+    id_number = StringField(
+        "Student ID",
+        validators=[
+            DataRequired(),
+            Length(min=9, max=9, message="Student ID must be exactly 9 characters (YYYY-NNNN)"),
+            Regexp(r'^\d{4}-\d{4}$', message="Student ID must be in format YYYY-NNNN (e.g., 2023-1234)")
+        ]
+    )
     first_name = StringField("First Name", validators=[DataRequired()])
     last_name = StringField("Last Name", validators=[DataRequired()])
     program_id = SelectField("Program", coerce=str, validators=[DataRequired()])
