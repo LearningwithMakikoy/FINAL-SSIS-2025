@@ -1,58 +1,69 @@
 
 from flask import render_template, redirect, url_for, flash, request, jsonify
-from flask_login import login_required
+from flask_login import login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import bp
-from .forms import StudentForm, ProgramForm, CollegeForm
-from app.models import Student, Program, College
-from app.database import get_connection
+from .forms import StudentForm, ProgramForm, CollegeForm,SignupForm, LoginForm
+from app.models import Student, Program, College, User
+
 
 # DASHBOARD / INDEX
 
 @bp.route('/')
 @login_required
 def index():
-    return render_template('layouts/index.html')
+    return render_template('index.html')
 
 
-# create user/signup
+#Signup Route
+@bp.route('/signup', methods=['GET', 'POST'])
+def signup():
+    form = SignupForm()
 
-def create_user(username, email,password):
-    conn= get_connection()
-    cur = conn.cursor()
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        email = form.email.data.strip()
+        password = form.password.data
 
-    try:
+        # Check if username exists
+        existing = User.get_by_username(username)
+        if existing:
+            flash("Username is already taken", "danger")
+            return redirect(url_for('user.signup'))
+
         hashed = generate_password_hash(password)
+        new_user = User.create(username, email, hashed)
 
-        cur.execute("""
-            INSERT INTO users (username, email, password_hash)
-            VALUES (%s, %s, %s)
-            RETURNING id;
-        """, (username, email, hashed))
+        if not new_user:
+            flash("Error creating user", "danger")
+            return redirect(url_for('user.signup'))
 
-        user_id = cur.fetchone()[0]
-        conn.commit()
-        return user_id
+        flash("Account created! You may now log in.", "success")
+        return redirect(url_for('user.login'))
 
-    except Exception:
-        conn.rollback()
-        return None
-
-    finally:
-        cur.close()
-        conn.close()
+    return render_template('auth/signup.html', form=form)
 
 
-def get_user_by_username(username):
-    conn = get_connection()
-    cur = conn.cursor()
+#login route
+@bp.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
 
-    cur.execute("SELECT * FROM users WHERE username = %s", (username,))
-    user = cur.fetchone()
+    if form.validate_on_submit():
+        username = form.username.data.strip()
+        password = form.password.data
 
-    cur.close()
-    conn.close()
-    return user  
+        user = User.get_by_username(username)
+
+        if not user or not check_password_hash(user.password_hash, password):
+            flash("Invalid username or password", "danger")
+            return redirect(url_for('user.login'))
+
+        login_user(user)
+        flash("Logged in successfully!", "success")
+        return redirect(url_for('user.index'))
+
+    return render_template('auth/login.html', form=form)
 
 
 # PROGRAM ROUTES
@@ -193,3 +204,10 @@ def delete_student(student_id):
 
     Student.delete(student_id)
     return jsonify(success=True, message="Student deleted")
+
+@bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash("Logged out successfully!", "success")
+    return redirect(url_for('user.login'))
