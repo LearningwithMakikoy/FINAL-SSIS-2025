@@ -187,6 +187,36 @@ class Program:
         conn.close()
 
     @staticmethod
+    def update_code(old_code, new_code, name, college):
+        """Update program code (primary key) - requires delete and recreate"""
+        conn = get_connection()
+        cur = conn.cursor()
+        try:
+            # First update any foreign key references (students that reference this program)
+            cur.execute("""
+                UPDATE student
+                SET course = %s
+                WHERE course = %s;
+            """, (new_code, old_code))
+            
+            # Delete the old program
+            cur.execute("DELETE FROM program WHERE code = %s;", (old_code,))
+            
+            # Create the new program with new code
+            cur.execute("""
+                INSERT INTO program (code, name, college)
+                VALUES (%s, %s, %s);
+            """, (new_code, name, college))
+            
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            cur.close()
+            conn.close()
+
+    @staticmethod
     def delete(code):
         conn = get_connection()
         cur = conn.cursor()
@@ -253,6 +283,36 @@ class College:
         conn.commit()
         cur.close()
         conn.close()
+
+    @staticmethod
+    def update_code(old_code, new_code, name):
+        """Update college code (primary key) - requires delete and recreate"""
+        conn = get_connection()
+        cur = conn.cursor()
+        try:
+            # First update any foreign key references (programs that reference this college)
+            cur.execute("""
+                UPDATE program
+                SET college = %s
+                WHERE college = %s;
+            """, (new_code, old_code))
+            
+            # Delete the old college
+            cur.execute("DELETE FROM college WHERE code = %s;", (old_code,))
+            
+            # Create the new college with new code
+            cur.execute("""
+                INSERT INTO college (code, name)
+                VALUES (%s, %s);
+            """, (new_code, name))
+            
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            cur.close()
+            conn.close()
 
     @staticmethod
     def delete(code):

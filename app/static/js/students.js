@@ -173,8 +173,9 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Add sorting to table headers
-  const tableHeaders = document.querySelectorAll('#students-table-body').closest('table')?.querySelectorAll('thead th');
-  if (tableHeaders) {
+  const table = tbody ? tbody.closest('table') : null;
+  const tableHeaders = table ? table.querySelectorAll('thead th') : [];
+  if (tableHeaders.length > 0) {
     const sortableColumns = ['id_number', 'first_name', 'last_name', 'program', 'year', 'gender'];
     tableHeaders.forEach((th, index) => {
       if (index < sortableColumns.length) {
@@ -186,6 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const sortIcon = document.createElement('span');
         sortIcon.className = 'sort-icon ms-1';
         sortIcon.innerHTML = '↕';
+        sortIcon.style.fontSize = '0.9em';
         th.appendChild(sortIcon);
         
         th.addEventListener('click', function() {
@@ -205,12 +207,16 @@ document.addEventListener('DOMContentLoaded', function() {
           tableHeaders.forEach((header, idx) => {
             if (idx < sortableColumns.length) {
               const icon = header.querySelector('.sort-icon');
-              if (header.getAttribute('data-column') === column) {
-                icon.textContent = sortDirection === 'asc' ? '↑' : '↓';
-                icon.style.color = '#0d6efd';
-              } else {
-                icon.textContent = '↕';
-                icon.style.color = '';
+              if (icon) {
+                if (header.getAttribute('data-column') === column) {
+                  icon.textContent = sortDirection === 'asc' ? '↑' : '↓';
+                  icon.style.color = '#0d6efd';
+                  icon.style.fontWeight = 'bold';
+                } else {
+                  icon.textContent = '↕';
+                  icon.style.color = '#6c757d';
+                  icon.style.fontWeight = 'normal';
+                }
               }
             }
           });
@@ -431,6 +437,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // Initialize filtered students and render
+  filteredStudents = students.slice();
   renderTable();
 });
 

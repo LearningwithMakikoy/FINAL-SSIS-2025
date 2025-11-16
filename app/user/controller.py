@@ -94,8 +94,25 @@ def programs():
         college_code = form.college_id.data or None
 
         if form.id.data:  # Editing an existing program
-            Program.update(code, name, college_code)
+            old_code = form.id.data.strip()
+            # If code changed, we need to update the code (primary key)
+            if old_code != code:
+                # Check if new code already exists
+                existing = Program.get_by_code(code)
+                if existing:
+                    flash(f"Program code '{code}' already exists.", "danger")
+                    return redirect(url_for('user.programs'))
+                # Update with new code (delete old, create new)
+                Program.update_code(old_code, code, name, college_code)
+            else:
+                # Just update name and college
+                Program.update(code, name, college_code)
         else:  # Creating a new program
+            # Check if code already exists
+            existing = Program.get_by_code(code)
+            if existing:
+                flash(f"Program code '{code}' already exists.", "danger")
+                return redirect(url_for('user.programs'))
             Program.create(code, name, college_code)
 
         flash("Program saved successfully.", "success")
@@ -134,8 +151,25 @@ def colleges():
         name = form.name.data.strip()
 
         if form.id.data:  # Editing
-            College.update(code, name)
+            old_code = form.id.data.strip()
+            # If code changed, we need to update the code (primary key)
+            if old_code != code:
+                # Check if new code already exists
+                existing = College.get_by_code(code)
+                if existing:
+                    flash(f"College code '{code}' already exists.", "danger")
+                    return redirect(url_for('user.colleges'))
+                # Update with new code (delete old, create new)
+                College.update_code(old_code, code, name)
+            else:
+                # Just update the name
+                College.update(code, name)
         else:  # Creating
+            # Check if code already exists
+            existing = College.get_by_code(code)
+            if existing:
+                flash(f"College code '{code}' already exists.", "danger")
+                return redirect(url_for('user.colleges'))
             College.create(code, name)
 
         flash("College saved successfully.", "success")
@@ -175,22 +209,40 @@ def students():
 
     if form.validate_on_submit():
         student_id = form.id_number.data.strip()
+        first_name = form.first_name.data.strip()
+        last_name = form.last_name.data.strip()
+        program_code = form.program_id.data or None
 
         if form.id.data:  # Editing existing student
+            old_student_id = form.id.data.strip()
+            
+            # Check if student ID already exists (if changed)
+            if old_student_id != student_id:
+                existing = Student.get_by_id(student_id)
+                if existing:
+                    flash(f"Student ID '{student_id}' already exists.", "danger")
+                    return redirect(url_for('user.students'))
+            
             Student.update(
                 student_id,
-                form.first_name.data.strip(),
-                form.last_name.data.strip(),
-                form.program_id.data or None,
+                first_name,
+                last_name,
+                program_code,
                 form.year.data,
                 form.gender.data
             )
         else:  # Creating new student
+            # Check if student ID already exists
+            existing = Student.get_by_id(student_id)
+            if existing:
+                flash(f"Student ID '{student_id}' already exists.", "danger")
+                return redirect(url_for('user.students'))
+            
             Student.create(
                 student_id,
-                form.first_name.data.strip(),
-                form.last_name.data.strip(),
-                form.program_id.data or None,
+                first_name,
+                last_name,
+                program_code,
                 form.year.data,
                 form.gender.data
             )
