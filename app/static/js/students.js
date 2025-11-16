@@ -2,8 +2,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('studentForm');
   const tbody = document.getElementById('students-table-body');
   const searchInput = document.getElementById('student-search');
+  const paginationEl = document.querySelector('.pagination');
   let students = window.INIT_STUDENTS || [];
+  let filteredStudents = students.slice();
   let editIndex = null;
+  
+  // Sorting state
+  let sortColumn = null;
+  let sortDirection = 'asc'; // 'asc' or 'desc'
+  
+  // Pagination state
+  const pageSize = 10;
+  let currentPage = 1;
 
   function escapeHtml(text) {
     if (text == null) return '';
@@ -12,14 +22,71 @@ document.addEventListener('DOMContentLoaded', function() {
     return div.innerHTML;
   }
 
-  function renderTable(list = students) {
+  function sortData(data, column, direction) {
+    if (!column) return data;
+    
+    return [...data].sort((a, b) => {
+      let aVal, bVal;
+      
+      switch(column) {
+        case 'id_number':
+          aVal = (a.id_number || a.id || '').toLowerCase();
+          bVal = (b.id_number || b.id || '').toLowerCase();
+          break;
+        case 'first_name':
+          aVal = (a.first_name || '').toLowerCase();
+          bVal = (b.first_name || '').toLowerCase();
+          break;
+        case 'last_name':
+          aVal = (a.last_name || '').toLowerCase();
+          bVal = (b.last_name || '').toLowerCase();
+          break;
+        case 'program':
+          aVal = (a.program || a.course || '').toLowerCase();
+          bVal = (b.program || b.course || '').toLowerCase();
+          break;
+        case 'year':
+          aVal = parseInt(a.year) || 0;
+          bVal = parseInt(b.year) || 0;
+          break;
+        case 'gender':
+          aVal = (a.gender || '').toLowerCase();
+          bVal = (b.gender || '').toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      } else {
+        return direction === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+    });
+  }
+
+  function renderTable(list = filteredStudents) {
     if (!tbody) return;
+    
+    // Sort the data
+    const sortedData = sortData(list, sortColumn, sortDirection);
+    
+    // Paginate
+    const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize));
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageData = sortedData.slice(start, end);
+    
     tbody.innerHTML = '';
-    if (list.length === 0) {
+    if (pageData.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No students found.</td></tr>`;
+      renderPagination(sortedData.length, totalPages);
       return;
     }
-    list.forEach((s, i) => {
+    
+    // Find original indices for edit/delete buttons
+    pageData.forEach((s, i) => {
+      const originalIndex = filteredStudents.findIndex(st => st.id === s.id);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${escapeHtml(s.id_number || s.id || '')}</td>
@@ -29,10 +96,128 @@ document.addEventListener('DOMContentLoaded', function() {
         <td>${escapeHtml(String(s.year || ''))}</td>
         <td>${escapeHtml(s.gender || '')}</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary me-1" data-index="${i}" data-action="edit">Edit</button>
-          <button class="btn btn-sm btn-outline-danger" data-index="${i}" data-action="delete">Delete</button>
+          <button class="btn btn-sm btn-outline-primary me-1" data-index="${originalIndex}" data-action="edit">Edit</button>
+          <button class="btn btn-sm btn-outline-danger" data-index="${originalIndex}" data-action="delete">Delete</button>
         </td>`;
       tbody.appendChild(tr);
+    });
+    
+    renderPagination(sortedData.length, totalPages);
+  }
+
+  function renderPagination(totalItems, totalPages) {
+    if (!paginationEl) return;
+    paginationEl.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    const createPageItem = (label, page, disabled = false, active = false) => {
+      const li = document.createElement('li');
+      li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+      const a = document.createElement('a');
+      a.className = 'page-link';
+      a.href = '#';
+      a.textContent = label;
+      if (!disabled) {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          currentPage = page;
+          renderTable();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+      li.appendChild(a);
+      return li;
+    };
+    
+    // Previous button
+    const prev = createPageItem('Previous', currentPage - 1, currentPage === 1);
+    paginationEl.appendChild(prev);
+    
+    // Page numbers
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    if (startPage > 1) {
+      paginationEl.appendChild(createPageItem('1', 1));
+      if (startPage > 2) {
+        const ellipsis = document.createElement('li');
+        ellipsis.className = 'page-item disabled';
+        ellipsis.innerHTML = '<span class="page-link">...</span>';
+        paginationEl.appendChild(ellipsis);
+      }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      paginationEl.appendChild(createPageItem(String(i), i, false, i === currentPage));
+    }
+    
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        const ellipsis = document.createElement('li');
+        ellipsis.className = 'page-item disabled';
+        ellipsis.innerHTML = '<span class="page-link">...</span>';
+        paginationEl.appendChild(ellipsis);
+      }
+      paginationEl.appendChild(createPageItem(String(totalPages), totalPages));
+    }
+    
+    // Next button
+    const next = createPageItem('Next', currentPage + 1, currentPage === totalPages);
+    paginationEl.appendChild(next);
+  }
+
+  // Add sorting to table headers
+  const tableHeaders = document.querySelectorAll('#students-table-body').closest('table')?.querySelectorAll('thead th');
+  if (tableHeaders) {
+    const sortableColumns = ['id_number', 'first_name', 'last_name', 'program', 'year', 'gender'];
+    tableHeaders.forEach((th, index) => {
+      if (index < sortableColumns.length) {
+        th.style.cursor = 'pointer';
+        th.style.userSelect = 'none';
+        th.setAttribute('data-column', sortableColumns[index]);
+        
+        // Add sort indicators
+        const sortIcon = document.createElement('span');
+        sortIcon.className = 'sort-icon ms-1';
+        sortIcon.innerHTML = '↕';
+        th.appendChild(sortIcon);
+        
+        th.addEventListener('click', function() {
+          const column = this.getAttribute('data-column');
+          
+          // Toggle sort direction if clicking the same column
+          if (sortColumn === column) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+          } else {
+            sortColumn = column;
+            sortDirection = 'asc';
+          }
+          
+          currentPage = 1; // Reset to first page when sorting
+          
+          // Update sort indicators
+          tableHeaders.forEach((header, idx) => {
+            if (idx < sortableColumns.length) {
+              const icon = header.querySelector('.sort-icon');
+              if (header.getAttribute('data-column') === column) {
+                icon.textContent = sortDirection === 'asc' ? '↑' : '↓';
+                icon.style.color = '#0d6efd';
+              } else {
+                icon.textContent = '↕';
+                icon.style.color = '';
+              }
+            }
+          });
+          
+          renderTable();
+        });
+      }
     });
   }
 
@@ -52,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const action = btn.dataset.action;
 
     if (action === 'delete') {
-      const student = students[index];
+      const student = filteredStudents[index];
       if (!student) return;
       if (!confirm(`Delete student ${student.first_name} ${student.last_name}?`)) return;
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
@@ -68,6 +253,11 @@ document.addEventListener('DOMContentLoaded', function() {
           if (studentIndex !== -1) {
             students.splice(studentIndex, 1);
           }
+          const filteredIndex = filteredStudents.findIndex(s => s.id === student.id);
+          if (filteredIndex !== -1) {
+            filteredStudents.splice(filteredIndex, 1);
+          }
+          currentPage = 1; // Reset to first page
           renderTable();
           showAlert('success', data.message || 'Student deleted');
         } else {
@@ -78,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showAlert('danger', 'Failed to delete student');
       });
     } else if (action === 'edit') {
-      const student = students[index];
+      const student = filteredStudents[index];
       if (form && student) {
         if (form.elements['id']) form.elements['id'].value = student.id || '';
         if (form.elements['id_number']) form.elements['id_number'].value = student.id_number || student.id || '';
@@ -97,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (searchInput) {
     searchInput.addEventListener('input', function() {
       const q = this.value.toLowerCase();
-      const filtered = students.filter(s => {
+      filteredStudents = students.filter(s => {
         const firstName = (s.first_name || '').toLowerCase();
         const lastName = (s.last_name || '').toLowerCase();
         const idNumber = (s.id_number || s.id || '').toLowerCase();
@@ -107,7 +297,8 @@ document.addEventListener('DOMContentLoaded', function() {
                idNumber.includes(q) ||
                program.includes(q);
       });
-      renderTable(filtered);
+      currentPage = 1; // Reset to first page when searching
+      renderTable();
     });
   }
 
