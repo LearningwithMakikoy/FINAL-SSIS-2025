@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let sortDirection = 'asc'; // 'asc' or 'desc'
   
   // Pagination state
-  const pageSize = 10;
+  const pageSize = 30;
   let currentPage = 1;
 
   function escapeHtml(text) {
