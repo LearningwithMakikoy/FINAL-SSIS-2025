@@ -103,37 +103,45 @@ document.addEventListener('DOMContentLoaded', function() {
     const prev = createPageItem('Previous', currentPage - 1, currentPage === 1);
     paginationEl.appendChild(prev);
     
-    // Page numbers
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-    
-    if (endPage - startPage < maxVisiblePages - 1) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-    
-    if (startPage > 1) {
-      paginationEl.appendChild(createPageItem('1', 1));
-      if (startPage > 2) {
-        const ellipsis = document.createElement('li');
-        ellipsis.className = 'page-item disabled';
-        ellipsis.innerHTML = '<span class="page-link">...</span>';
-        paginationEl.appendChild(ellipsis);
+    // Page numbers - show all pages if 20 or fewer, otherwise show window around current page
+    if (totalPages <= 20) {
+      // Show all pages
+      for (let i = 1; i <= totalPages; i++) {
+        paginationEl.appendChild(createPageItem(String(i), i, false, i === currentPage));
       }
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      paginationEl.appendChild(createPageItem(String(i), i, false, i === currentPage));
-    }
-    
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        const ellipsis = document.createElement('li');
-        ellipsis.className = 'page-item disabled';
-        ellipsis.innerHTML = '<span class="page-link">...</span>';
-        paginationEl.appendChild(ellipsis);
+    } else {
+      // Show window of pages around current page
+      const maxVisiblePages = 7;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      
+      if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
       }
-      paginationEl.appendChild(createPageItem(String(totalPages), totalPages));
+      
+      if (startPage > 1) {
+        paginationEl.appendChild(createPageItem('1', 1));
+        if (startPage > 2) {
+          const ellipsis = document.createElement('li');
+          ellipsis.className = 'page-item disabled';
+          ellipsis.innerHTML = '<span class="page-link">...</span>';
+          paginationEl.appendChild(ellipsis);
+        }
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        paginationEl.appendChild(createPageItem(String(i), i, false, i === currentPage));
+      }
+      
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+          const ellipsis = document.createElement('li');
+          ellipsis.className = 'page-item disabled';
+          ellipsis.innerHTML = '<span class="page-link">...</span>';
+          paginationEl.appendChild(ellipsis);
+        }
+        paginationEl.appendChild(createPageItem(String(totalPages), totalPages));
+      }
     }
     
     // Next button
