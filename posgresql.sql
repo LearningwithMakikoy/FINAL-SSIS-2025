@@ -435,3 +435,7 @@ INSERT INTO student (id, firstname, lastname, course, year, gender) VALUES
 ('2023-0448','Yuri','Giron','ABSOC',2,'Male'),
 ('2022-0449','Ariel','Santos','ABPHILO',1,'Female'),
 ('2024-0450','Rolly','Carlos','BSBA',3,'Male');
+
+
+ALTER TABLE student 
+ADD COLUMN IF NOT EXISTS photo_url VARCHAR(500);

@@ -1,9 +1,12 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from . import bp
 from .forms import  StudentForm, ProgramForm, CollegeForm, SignupForm, LoginForm
 from app.models import Student, Program, College, User
+from app.supabase_client import upload_student_photo, delete_student_photo
+import os
 
 
 
@@ -213,6 +216,30 @@ def students():
         last_name = form.last_name.data.strip()
         program_code = form.program_id.data or None
 
+        # Handle photo upload if provided
+        photo_url = None
+        if 'photo' in request.files:
+            photo_file = request.files['photo']
+            if photo_file and photo_file.filename:
+                try:
+                    # Get file extension
+                    file_ext = os.path.splitext(photo_file.filename)[1].lstrip('.')
+                    if file_ext.lower() not in ['jpg', 'jpeg', 'png', 'gif']:
+                        flash("Invalid file type. Please upload JPG, PNG, or GIF.", "danger")
+                        return redirect(url_for('user.students'))
+                    
+                    # Read file data
+                    file_data = photo_file.read()
+                    if len(file_data) > 5 * 1024 * 1024:  # 5MB limit
+                        flash("File too large. Maximum size is 5MB.", "danger")
+                        return redirect(url_for('user.students'))
+                    
+                    # Upload to Supabase
+                    photo_url = upload_student_photo(file_data, student_id, file_ext)
+                except Exception as e:
+                    flash(f"Error uploading photo: {str(e)}", "danger")
+                    return redirect(url_for('user.students'))
+
         if form.id.data:  # Editing existing student
             old_student_id = form.id.data.strip()
             
@@ -223,13 +250,19 @@ def students():
                     flash(f"Student ID '{student_id}' already exists.", "danger")
                     return redirect(url_for('user.students'))
             
+            # Get existing student to preserve photo_url if not updating
+            existing_student = Student.get_by_id(old_student_id)
+            if not photo_url and existing_student:
+                photo_url = existing_student.get('photo_url')
+            
             Student.update(
                 student_id,
                 first_name,
                 last_name,
                 program_code,
                 form.year.data,
-                form.gender.data
+                form.gender.data,
+                photo_url
             )
         else:  # Creating new student
             # Check if student ID already exists
@@ -244,7 +277,8 @@ def students():
                 last_name,
                 program_code,
                 form.year.data,
-                form.gender.data
+                form.gender.data,
+                photo_url
             )
 
         flash("Student saved successfully.", "success")
@@ -261,7 +295,8 @@ def students():
             'program': s['program_name'] or s['course'] or '',
             'course': s['course'],
             'year': s['year'],
-            'gender': s['gender']
+            'gender': s['gender'],
+            'photo_url': s.get('photo_url') or ''
         }
         for s in students_list
     ]
@@ -278,5 +313,62 @@ def delete_student(student_id):
     if not st:
         return jsonify(success=False, message="Student not found"), 404
 
+    # Delete photo from Supabase if exists
+    if st.get('photo_url'):
+        try:
+            delete_student_photo(st['photo_url'])
+        except Exception as e:
+            print(f"Error deleting photo: {str(e)}")
+
     Student.delete(student_id)
     return jsonify(success=True, message="Student deleted")
+
+
+@bp.route('/students/upload-photo/<string:student_id>', methods=['POST'])
+@login_required
+def upload_student_photo_route(student_id):
+    """API endpoint to upload student photo separately."""
+    try:
+        if 'photo' not in request.files:
+            return jsonify(success=False, message="No file provided"), 400
+        
+        photo_file = request.files['photo']
+        if not photo_file or not photo_file.filename:
+            return jsonify(success=False, message="No file selected"), 400
+        
+        # Validate file type
+        file_ext = os.path.splitext(photo_file.filename)[1].lstrip('.')
+        if file_ext.lower() not in ['jpg', 'jpeg', 'png', 'gif']:
+            return jsonify(success=False, message="Invalid file type. Please upload JPG, PNG, or GIF."), 400
+        
+        # Read file data
+        file_data = photo_file.read()
+        if len(file_data) > 5 * 1024 * 1024:  # 5MB limit
+            return jsonify(success=False, message="File too large. Maximum size is 5MB."), 400
+        
+        # Get existing student to delete old photo
+        existing_student = Student.get_by_id(student_id)
+        if existing_student and existing_student.get('photo_url'):
+            try:
+                delete_student_photo(existing_student['photo_url'])
+            except Exception as e:
+                print(f"Error deleting old photo: {str(e)}")
+        
+        # Upload to Supabase
+        photo_url = upload_student_photo(file_data, student_id, file_ext)
+        
+        # Update student record
+        if existing_student:
+            Student.update(
+                student_id,
+                existing_student['firstname'],
+                existing_student['lastname'],
+                existing_student.get('course'),
+                existing_student['year'],
+                existing_student['gender'],
+                photo_url
+            )
+        
+        return jsonify(success=True, message="Photo uploaded successfully", photo_url=photo_url)
+    except Exception as e:
+        return jsonify(success=False, message=f"Error uploading photo: {str(e)}"), 500

@@ -4,3 +4,4 @@ flask-wtf
 flask-login
 python-dotenv
 flask
+supabase

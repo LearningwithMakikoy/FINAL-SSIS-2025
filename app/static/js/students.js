@@ -30,35 +30,53 @@ document.addEventListener('DOMContentLoaded', function() {
       
       switch(column) {
         case 'id_number':
-          aVal = (a.id_number || a.id || '').toLowerCase();
-          bVal = (b.id_number || b.id || '').toLowerCase();
+          // Parse ID number in format YYYY-NNNN for proper numeric sorting
+          const parseIdNumber = (idStr) => {
+            if (!idStr) return { year: 0, num: 0 };
+            const id = (idStr || '').toString().trim();
+            // Handle YYYY-NNNN format
+            if (id.includes('-')) {
+              const parts = id.split('-');
+              const year = parseInt(parts[0]) || 0;
+              const num = parseInt(parts[1]) || 0;
+              return { year, num, full: year * 10000 + num }; // Combine for sorting
+            }
+            // Fallback: try to parse as number
+            const num = parseInt(id.replace(/\D/g, '')) || 0;
+            return { year: Math.floor(num / 10000), num: num % 10000, full: num };
+          };
+          const aId = parseIdNumber(a.id_number || a.id || '');
+          const bId = parseIdNumber(b.id_number || b.id || '');
+          aVal = aId.full;
+          bVal = bId.full;
           break;
         case 'first_name':
-          aVal = (a.first_name || '').toLowerCase();
-          bVal = (b.first_name || '').toLowerCase();
+          aVal = (a.first_name || '').trim().toLowerCase();
+          bVal = (b.first_name || '').trim().toLowerCase();
           break;
         case 'last_name':
-          aVal = (a.last_name || '').toLowerCase();
-          bVal = (b.last_name || '').toLowerCase();
+          aVal = (a.last_name || '').trim().toLowerCase();
+          bVal = (b.last_name || '').trim().toLowerCase();
           break;
         case 'program':
-          aVal = (a.program || a.course || '').toLowerCase();
-          bVal = (b.program || b.course || '').toLowerCase();
+          aVal = (a.program || a.course || '').trim().toLowerCase();
+          bVal = (b.program || b.course || '').trim().toLowerCase();
           break;
         case 'year':
           aVal = parseInt(a.year) || 0;
           bVal = parseInt(b.year) || 0;
           break;
         case 'gender':
-          aVal = (a.gender || '').toLowerCase();
-          bVal = (b.gender || '').toLowerCase();
+          aVal = (a.gender || '').trim().toLowerCase();
+          bVal = (b.gender || '').trim().toLowerCase();
           break;
         default:
           return 0;
       }
       
       if (typeof aVal === 'string' && typeof bVal === 'string') {
-        return direction === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        const comparison = aVal.localeCompare(bVal);
+        return direction === 'asc' ? comparison : -comparison;
       } else {
         return direction === 'asc' ? aVal - bVal : bVal - aVal;
       }
@@ -79,16 +97,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     tbody.innerHTML = '';
     if (pageData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No students found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted">No students found.</td></tr>`;
       renderPagination(sortedData.length, totalPages);
       return;
     }
     
-    // Find original indices for edit/delete buttons
+    // Render table rows
     pageData.forEach((s, i) => {
-      const originalIndex = filteredStudents.findIndex(st => st.id === s.id);
+      const photoUrl = s.photo_url || '';
+      const photoId = `photo-${s.id}`;
+      const placeholderId = `photo-placeholder-${s.id}`;
+      const photoHtml = photoUrl 
+        ? `<div style="position: relative; width: 40px; height: 40px;">
+             <img id="${photoId}" src="${escapeHtml(photoUrl)}" alt="Student photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; document.getElementById('${placeholderId}').style.display='flex';">
+             <div id="${placeholderId}" style="display: none; width: 40px; height: 40px; background-color: #dee2e6; border-radius: 4px; align-items: center; justify-content: center; font-size: 0.7rem; color: #6c757d;">No photo</div>
+           </div>`
+        : `<div style="width: 40px; height: 40px; background-color: #dee2e6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #6c757d;">No photo</div>`;
+      
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td>${photoHtml}</td>
         <td>${escapeHtml(s.id_number || s.id || '')}</td>
         <td>${escapeHtml(s.first_name || '')}</td>
         <td>${escapeHtml(s.last_name || '')}</td>
@@ -96,8 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <td>${escapeHtml(String(s.year || ''))}</td>
         <td>${escapeHtml(s.gender || '')}</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary me-1" data-index="${originalIndex}" data-action="edit">Edit</button>
-          <button class="btn btn-sm btn-outline-danger" data-index="${originalIndex}" data-action="delete">Delete</button>
+          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+            <button class="btn btn-sm btn-outline-primary" data-student-id="${escapeHtml(s.id)}" data-action="edit">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" data-student-id="${escapeHtml(s.id)}" data-action="delete">Delete</button>
+          </div>
         </td>`;
       tbody.appendChild(tr);
     });
@@ -180,57 +210,98 @@ document.addEventListener('DOMContentLoaded', function() {
     paginationEl.appendChild(next);
   }
 
-  // Add sorting to table headers
+  // Add sorting to table headers (only once on page load)
   const table = tbody ? tbody.closest('table') : null;
   const tableHeaders = table ? table.querySelectorAll('thead th') : [];
   if (tableHeaders.length > 0) {
-    const sortableColumns = ['id_number', 'first_name', 'last_name', 'program', 'year', 'gender'];
+    // Map column indices to sortable column names
+    // Index 0: Photo (not sortable)
+    // Index 1: ID # (id_number)
+    // Index 2: First Name (first_name)
+    // Index 3: Last Name (last_name)
+    // Index 4: Course (program)
+    // Index 5: Year (year)
+    // Index 6: Gender (gender)
+    // Index 7: Actions (not sortable)
+    const columnMapping = {
+      1: 'id_number',
+      2: 'first_name',
+      3: 'last_name',
+      4: 'program',
+      5: 'year',
+      6: 'gender'
+    };
+    
     tableHeaders.forEach((th, index) => {
-      if (index < sortableColumns.length) {
-        th.style.cursor = 'pointer';
-        th.style.userSelect = 'none';
-        th.setAttribute('data-column', sortableColumns[index]);
-        
-        // Add sort indicators
-        const sortIcon = document.createElement('span');
-        sortIcon.className = 'sort-icon ms-1';
-        sortIcon.innerHTML = '↕';
-        sortIcon.style.fontSize = '0.9em';
-        th.appendChild(sortIcon);
-        
-        th.addEventListener('click', function() {
-          const column = this.getAttribute('data-column');
+      const columnName = columnMapping[index];
+      
+      // Only make sortable columns clickable
+      if (columnName) {
+        // Check if already initialized to avoid duplicate icons
+        if (!th.hasAttribute('data-sort-initialized')) {
+          th.style.cursor = 'pointer';
+          th.style.userSelect = 'none';
+          th.setAttribute('data-column', columnName);
+          th.setAttribute('data-sort-initialized', 'true');
           
-          // Toggle sort direction if clicking the same column
-          if (sortColumn === column) {
-            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-          } else {
-            sortColumn = column;
-            sortDirection = 'asc';
+          // Add sort indicators (only if not already present)
+          if (!th.querySelector('.sort-icon')) {
+            const sortIcon = document.createElement('span');
+            sortIcon.className = 'sort-icon ms-1';
+            sortIcon.innerHTML = '↕';
+            sortIcon.style.fontSize = '0.9em';
+            th.appendChild(sortIcon);
           }
           
-          currentPage = 1; // Reset to first page when sorting
-          
-          // Update sort indicators
-          tableHeaders.forEach((header, idx) => {
-            if (idx < sortableColumns.length) {
-              const icon = header.querySelector('.sort-icon');
-              if (icon) {
-                if (header.getAttribute('data-column') === column) {
-                  icon.textContent = sortDirection === 'asc' ? '↑' : '↓';
-                  icon.style.color = '#0d6efd';
-                  icon.style.fontWeight = 'bold';
-                } else {
-                  icon.textContent = '↕';
-                  icon.style.color = '#6c757d';
-                  icon.style.fontWeight = 'normal';
+          th.addEventListener('click', function() {
+            const column = this.getAttribute('data-column');
+            
+            // Toggle sort direction if clicking the same column
+            if (sortColumn === column) {
+              sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+              sortColumn = column;
+              sortDirection = 'asc';
+            }
+            
+            currentPage = 1; // Reset to first page when sorting
+            
+            // Re-query headers to ensure we have fresh references
+            const currentHeaders = table ? table.querySelectorAll('thead th') : [];
+            const currentMapping = {
+              1: 'id_number',
+              2: 'first_name',
+              3: 'last_name',
+              4: 'program',
+              5: 'year',
+              6: 'gender'
+            };
+            
+            // Update sort indicators for all sortable columns
+            currentHeaders.forEach((header, idx) => {
+              const colName = currentMapping[idx];
+              if (colName) {
+                const icon = header.querySelector('.sort-icon');
+                if (icon) {
+                  if (header.getAttribute('data-column') === column) {
+                    icon.textContent = sortDirection === 'asc' ? '↑' : '↓';
+                    icon.style.color = '#0d6efd';
+                    icon.style.fontWeight = 'bold';
+                  } else {
+                    icon.textContent = '↕';
+                    icon.style.color = '#6c757d';
+                    icon.style.fontWeight = 'normal';
+                  }
                 }
               }
-            }
+            });
+            
+            renderTable();
           });
-          
-          renderTable();
-        });
+        }
+      } else {
+        // Non-sortable columns (Photo, Actions)
+        th.style.cursor = 'default';
       }
     });
   }
@@ -240,19 +311,71 @@ document.addEventListener('DOMContentLoaded', function() {
       form.reset();
       editIndex = null;
       if (form.elements['id']) form.elements['id'].value = '';
+      
+      // Reset photo preview
+      const photoPreview = document.getElementById('photo-preview');
+      const photoPlaceholder = document.getElementById('photo-placeholder');
+      const photoInput = document.getElementById('photo-input');
+      if (photoPreview && photoPlaceholder && photoInput) {
+        photoPreview.src = '';
+        photoPreview.style.display = 'none';
+        photoPlaceholder.style.display = 'block';
+        photoInput.value = '';
+      }
     }
+  }
+  
+  // Handle photo preview
+  const photoInput = document.getElementById('photo-input');
+  if (photoInput) {
+    photoInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        if (!validTypes.includes(file.type)) {
+          alert('Invalid file type. Please upload JPG, PNG, or GIF.');
+          e.target.value = '';
+          return;
+        }
+        
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('File too large. Maximum size is 5MB.');
+          e.target.value = '';
+          return;
+        }
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const photoPreview = document.getElementById('photo-preview');
+          const photoPlaceholder = document.getElementById('photo-placeholder');
+          if (photoPreview && photoPlaceholder) {
+            photoPreview.src = e.target.result;
+            photoPreview.style.display = 'block';
+            photoPlaceholder.style.display = 'none';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    });
   }
 
   // Handle edit/delete buttons
   tbody.addEventListener('click', function(e) {
     const btn = e.target.closest('button');
     if (!btn) return;
-    const index = parseInt(btn.dataset.index);
+    const studentId = btn.dataset.studentId;
     const action = btn.dataset.action;
+    
+    if (!studentId) return;
+
+    // Find student by ID (works regardless of sorting)
+    const student = students.find(s => s.id === studentId) || filteredStudents.find(s => s.id === studentId);
+    if (!student) return;
 
     if (action === 'delete') {
-      const student = filteredStudents[index];
-      if (!student) return;
       if (!confirm(`Delete student ${student.first_name} ${student.last_name}?`)) return;
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
       fetch(`/user/students/delete/${student.id}`, {
@@ -282,7 +405,6 @@ document.addEventListener('DOMContentLoaded', function() {
         showAlert('danger', 'Failed to delete student');
       });
     } else if (action === 'edit') {
-      const student = filteredStudents[index];
       if (form && student) {
         if (form.elements['id']) form.elements['id'].value = student.id || '';
         if (form.elements['id_number']) form.elements['id_number'].value = student.id_number || student.id || '';
@@ -291,8 +413,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (form.elements['program_id']) form.elements['program_id'].value = student.course || '';
         if (form.elements['year']) form.elements['year'].value = student.year || '';
         if (form.elements['gender']) form.elements['gender'].value = student.gender || '';
+        
+        // Set photo preview
+        const photoPreview = document.getElementById('photo-preview');
+        const photoPlaceholder = document.getElementById('photo-placeholder');
+        const photoInput = document.getElementById('photo-input');
+        if (photoPreview && photoPlaceholder && photoInput) {
+          if (student.photo_url) {
+            photoPreview.src = student.photo_url;
+            photoPreview.style.display = 'block';
+            photoPlaceholder.style.display = 'none';
+          } else {
+            photoPreview.style.display = 'none';
+            photoPlaceholder.style.display = 'block';
+          }
+          photoInput.value = ''; // Reset file input
+        }
       }
-      editIndex = index;
+      // Store student ID instead of index
+      editIndex = studentId;
       new bootstrap.Modal(document.querySelector('#studentModal')).show();
     }
   });

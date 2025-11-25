@@ -72,7 +72,7 @@ class Student:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-            SELECT s.id, s.firstname, s.lastname, s.course, s.year, s.gender,
+            SELECT s.id, s.firstname, s.lastname, s.course, s.year, s.gender, s.photo_url,
                    p.name AS program_name
             FROM student s
             LEFT JOIN program p ON s.course = p.code
@@ -94,27 +94,27 @@ class Student:
         return row
 
     @staticmethod
-    def create(id, firstname, lastname, course, year, gender):
+    def create(id, firstname, lastname, course, year, gender, photo_url=None):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-            INSERT INTO student (id, firstname, lastname, course, year, gender)
-            VALUES (%s, %s, %s, %s, %s, %s);
-        """, (id, firstname, lastname, course, year, gender))
+            INSERT INTO student (id, firstname, lastname, course, year, gender, photo_url)
+            VALUES (%s, %s, %s, %s, %s, %s, %s);
+        """, (id, firstname, lastname, course, year, gender, photo_url))
         conn.commit()
         cur.close()
         conn.close()
         return Student.get_by_id(id)
 
     @staticmethod
-    def update(id, firstname, lastname, course, year, gender):
+    def update(id, firstname, lastname, course, year, gender, photo_url=None):
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
             UPDATE student
-            SET firstname=%s, lastname=%s, course=%s, year=%s, gender=%s
+            SET firstname=%s, lastname=%s, course=%s, year=%s, gender=%s, photo_url=%s
             WHERE id=%s;
-        """, (firstname, lastname, course, year, gender, id))
+        """, (firstname, lastname, course, year, gender, photo_url, id))
         conn.commit()
         cur.close()
         conn.close()
