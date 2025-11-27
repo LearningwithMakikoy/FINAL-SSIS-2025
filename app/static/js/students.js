@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Render table rows
     pageData.forEach((s, i) => {
+      const DEFAULT_PHOTO_URL = 'https://mczkesrlrwuuxyxdigvp.supabase.co/storage/v1/object/public/SSIS/default_profile.jpg';
       const photoUrl = s.photo_url || '';
       const photoId = `photo-${s.id}`;
       const placeholderId = `photo-placeholder-${s.id}`;
@@ -112,7 +113,8 @@ document.addEventListener('DOMContentLoaded', function() {
              <img id="${photoId}" src="${escapeHtml(photoUrl)}" alt="Student photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; document.getElementById('${placeholderId}').style.display='flex';">
              <div id="${placeholderId}" style="display: none; width: 40px; height: 40px; background-color: #dee2e6; border-radius: 4px; align-items: center; justify-content: center; font-size: 0.7rem; color: #6c757d;">No photo</div>
            </div>`
-        : `<div style="width: 40px; height: 40px; background-color: #dee2e6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #6c757d;">No photo</div>`;
+        : `<div style="width: 40px; height: 40px; background-color: #dee2e6; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #6c757d;"><img src="${DEFAULT_PHOTO_URL}" alt="Default photo" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+           </div>`;
       
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -406,13 +408,31 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     } else if (action === 'edit') {
       if (form && student) {
-        if (form.elements['id']) form.elements['id'].value = student.id || '';
-        if (form.elements['id_number']) form.elements['id_number'].value = student.id_number || student.id || '';
-        if (form.elements['first_name']) form.elements['first_name'].value = student.first_name || '';
-        if (form.elements['last_name']) form.elements['last_name'].value = student.last_name || '';
-        if (form.elements['program_id']) form.elements['program_id'].value = student.course || '';
-        if (form.elements['year']) form.elements['year'].value = student.year || '';
-        if (form.elements['gender']) form.elements['gender'].value = student.gender || '';
+        // Always set DB id (hidden) and the original id_number (so server can find the record)
+        if (form.elements['id']) form.elements['id'].value = String(student.id ?? '');
+        if (form.elements['original_id_number']) {
+          form.elements['original_id_number'].value = student.id_number ?? String(student.id ?? '');
+        } else {
+          // fallback to element by id if form.elements doesn't have it
+          const origEl = document.getElementById('original_id_number');
+          if (origEl) origEl.value = student.id_number ?? String(student.id ?? '');
+        }
+
+        // Populate visible fields once
+        if (form.elements['id_number']) form.elements['id_number'].value = student.id_number ?? String(student.id ?? '');
+        if (form.elements['first_name']) form.elements['first_name'].value = student.first_name ?? '';
+        if (form.elements['last_name']) form.elements['last_name'].value = student.last_name ?? '';
+        if (form.elements['program_id']) form.elements['program_id'].value = student.program_id ?? student.course ?? '';
+        if (form.elements['year']) form.elements['year'].value = student.year ?? '';
+        if (form.elements['gender']) {
+          const g = form.elements['gender'];
+          g.value = student.gender ?? '';
+          if (!g.value) { // fallback to match option text
+            Array.from(g.options).forEach(opt => {
+              if ((opt.text || '').toLowerCase() === (student.gender || '').toLowerCase()) opt.selected = true;
+            });
+          }
+        }
         
         // Set photo preview
         const photoPreview = document.getElementById('photo-preview');

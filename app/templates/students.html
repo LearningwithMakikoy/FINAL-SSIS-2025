@@ -78,7 +78,7 @@
 
       <form id="studentForm" method="post" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
-
+                
         <div class="modal-header">
           <h5 class="modal-title">Student Information</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -92,7 +92,7 @@
               <label class="form-label">Student Photo</label>
               <div class="d-flex align-items-center gap-3">
                 <div id="photo-preview-container" style="width: 120px; height: 120px; border: 2px dashed #dee2e6; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background-color: #f8f9fa;">
-                  <img id="photo-preview" src="" alt="Preview" style="max-width: 100%; max-height: 100%; display: none; object-fit: cover;">
+                  <img id="photo-preview" src="https://mczkesrlrwuuxyxdigvp.supabase.co/storage/v1/object/public/SSIS/default_profile.jpg" alt="Preview" style="max-width: 100%; max-height: 100%; display: none; object-fit: cover;" onerror="this.onerror=null; this.src='https://mczkesrlrwuuxyxdigvp.supabase.co/storage/v1/object/public/SSIS/default_profile.jpg';">
                   <span id="photo-placeholder" class="text-muted small text-center p-2">No photo</span>
                 </div>
                 <div class="flex-grow-1">
@@ -128,7 +128,7 @@
 
             <div class="col-md-6">
               {{ form.gender.label(class="form-label") }}
-              {{ form.gender(class="form-select") }}
+              {{ form.gender(id="gender", class="form-select") }}
               {% for err in form.gender.errors %}
                 <div class="text-danger small">{{ err }}</div>
               {% endfor %}
