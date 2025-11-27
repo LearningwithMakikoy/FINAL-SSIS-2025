@@ -256,6 +256,7 @@ def students():
                 photo_url = existing_student.get('photo_url')
             
             Student.update(
+                old_student_id,
                 student_id,
                 first_name,
                 last_name,

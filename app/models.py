@@ -107,14 +107,14 @@ class Student:
         return Student.get_by_id(id)
 
     @staticmethod
-    def update(id, firstname, lastname, course, year, gender, photo_url=None):
+    def update(old_id, new_id, firstname, lastname, course, year, gender, photo_url=None):
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
             UPDATE student
-            SET firstname=%s, lastname=%s, course=%s, year=%s, gender=%s, photo_url=%s
+            SET id=%s, firstname=%s, lastname=%s, course=%s, year=%s, gender=%s, photo_url=%s
             WHERE id=%s;
-        """, (firstname, lastname, course, year, gender, photo_url, id))
+        """, (new_id, firstname, lastname, course, year, gender, photo_url, old_id))
         conn.commit()
         cur.close()
         conn.close()
