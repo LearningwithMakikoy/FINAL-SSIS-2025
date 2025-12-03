@@ -36,6 +36,12 @@ def signup():
         if existing:
             flash("Username already taken", "danger")
             return redirect(url_for('user.signup'))
+        
+        #Check if email exist
+        existing_email = User.get_by_email(email)
+        if existing_email:
+            flash("Email address already registered", "danger")
+            return redirect(url_for('user.signup'))
 
         # Create user
         hashed_pw = generate_password_hash(password)

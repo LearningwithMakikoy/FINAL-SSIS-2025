@@ -45,7 +45,24 @@ class User(UserMixin):
         if row:
             return User(row["id"], row["username"], row["email"], row["password_hash"])
         return None
-
+    
+    @staticmethod
+    def get_by_email(email):
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT id, username, email, password_hash
+            FROM users
+            WHERE email = %s;
+            """, (email,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row:
+            return User(row["id"], row["username"], row["email"], row["password_hash"])
+        return None
+        
+    
     @staticmethod
     def create(username, email, password_hash):
         conn = get_connection()

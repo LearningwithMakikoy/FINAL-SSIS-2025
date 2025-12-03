@@ -21,6 +21,8 @@ class SignupForm(FlaskForm):
                              validators=[DataRequired()])
     submit = SubmitField("Sign Up")
 
+    
+
 class ProgramForm(FlaskForm):
     id = HiddenField()
     code = StringField("Program Code", 
