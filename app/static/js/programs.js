@@ -293,6 +293,46 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // FORM LOADING FUNCTIONALITY 
+  const submitBtn = document.getElementById('submit-btn');
+  if (form && submitBtn) {
+    // Store original button HTML
+    const originalBtnHtml = submitBtn.innerHTML;
+    
+    // Handle form submission
+    form.addEventListener('submit', function() {
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Saving...
+      `;
+    });
+    
+    const programModal = document.getElementById('programModal');
+
+    // Reset button when modal closes
+    if (programModal) {
+      programModal.addEventListener('hidden.bs.modal', function() {
+        resetSubmitButton();
+      });
+      
+      programModal.addEventListener('show.bs.modal', function() {
+        resetSubmitButton();
+      });
+    }
+    
+    // Also reset on page load in case of validation errors
+    window.addEventListener('load', function() {
+      resetSubmitButton();
+    });
+    
+    function resetSubmitButton() {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnHtml;
+    }
+  }
+
   // Initialize filtered programs and render
   filteredPrograms = programs.slice();
   renderTable();

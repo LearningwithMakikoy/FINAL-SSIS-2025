@@ -603,6 +603,43 @@ document.addEventListener('DOMContentLoaded', function() {
       console.warn('showAlert failed', e);
     }
   }
+  // FORM LOADING FUNCTIONALITY 
+  const submitBtn = document.getElementById('submit-btn');
+  if (form && submitBtn) {
+    // Store original button HTML
+    const originalBtnHtml = submitBtn.innerHTML;
+    
+    // Handle form submission
+    form.addEventListener('submit', function() {
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Saving...
+      `;
+    });
+    
+    // Reset button when modal closes
+    if (modal) {
+      modal.addEventListener('hidden.bs.modal', function() {
+        resetSubmitButton();
+      });
+      
+      modal.addEventListener('show.bs.modal', function() {
+        resetSubmitButton();
+      });
+    }
+    
+    // Also reset on page load in case of validation errors
+    window.addEventListener('load', function() {
+      resetSubmitButton();
+    });
+    
+    function resetSubmitButton() {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnHtml;
+    }
+  }
 
   // Initialize filtered students and render
   filteredStudents = students.slice();

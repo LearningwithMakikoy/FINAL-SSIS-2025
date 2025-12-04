@@ -281,6 +281,40 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  // FORM LOADING FUNCTIONALITY 
+  const submitBtn = document.getElementById('submit-btn');
+  if (form && submitBtn) {
+    // Store original button HTML
+    const originalBtnHtml = submitBtn.innerHTML;
+    
+    // Handle form submission
+    form.addEventListener('submit', function() {
+      // Show loading state
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Saving...
+      `;
+    });
+    const collegeModal = document.getElementById('collegeModal');
+    // Reset button when modal closes
+    if (collegeModal) {
+      collegeModal.addEventListener('hidden.bs.modal', function() {
+        resetSubmitButton();
+      });
+      
+      collegeModal.addEventListener('show.bs.modal', function() {
+        resetSubmitButton();
+      });
+    }
+    
+    // Also reset on page load in case of validation errors
+    window.addEventListener('load', function() {
+      resetSubmitButton();
+    });
+  }
+
+
   // Initialize filtered colleges and render
   filteredColleges = colleges.slice();
   renderTable();
