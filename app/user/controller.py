@@ -5,10 +5,10 @@ from werkzeug.utils import secure_filename
 from . import bp
 from .forms import  StudentForm, ProgramForm, CollegeForm, SignupForm, LoginForm
 from app.models import Student, Program, College, User
-from app.supabase_client import upload_student_photo, delete_student_photo
+from app.supabase_client import upload_student_photo, delete_student_photo, get_supabase_client
 import os
-
-
+import re
+import traceback
 
 # DASHBOARD / HOME
 
@@ -345,8 +345,8 @@ def upload_student_photo_route(student_id):
         
         # Validate file type
         file_ext = os.path.splitext(photo_file.filename)[1].lstrip('.')
-        if file_ext.lower() not in ['jpg', 'jpeg', 'png', 'gif']:
-            return jsonify(success=False, message="Invalid file type. Please upload JPG, PNG, or GIF."), 400
+        if file_ext.lower() not in ['jpg', 'jpeg', 'png']:
+            return jsonify(success=False, message="Invalid file type. Please upload JPG, JPEG, or PNG"), 400
         
         # Read file data
         file_data = photo_file.read()
@@ -355,11 +355,22 @@ def upload_student_photo_route(student_id):
         
         # Get existing student to delete old photo
         existing_student = Student.get_by_id(student_id)
-        if existing_student and existing_student.get('photo_url'):
+
+        # Delete existing photo(s) if they exist
+        if existing_student:
             try:
-                delete_student_photo(existing_student['photo_url'])
+                if existing_student.get(photo_url):
+                    delete_student_photo(existing_student['photo_url'])
+                supabase = get_supabase_client()
+                bucket = supabase.storage.from_('SSIS')
+                
+                try:
+                    bucket.remove(f"students/{student_id}.jpg")
+                except: 
+                    pass
             except Exception as e:
-                print(f"Error deleting old photo: {str(e)}")
+                print(f"Error deleting old photo:  {str(e)}" )
+
         
         # Upload to Supabase
         photo_url = upload_student_photo(file_data, student_id, file_ext)

@@ -1,6 +1,8 @@
 import os
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from io import BytesIO
+from PIL import Image
 
 load_dotenv()
 
@@ -15,14 +17,18 @@ def get_supabase_client() -> Client:
         raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables")
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
+from io import BytesIO
+from PIL import Image
+
 def upload_student_photo(file_data: bytes, student_id: str, file_extension: str = "jpg") -> str:
     """
     Upload a student photo to Supabase storage.
+    Converts PNG to JPG for consistency, keeps JPEG as is.
     
     Args:
         file_data: Binary file data
         student_id: Student ID (used as filename)
-        file_extension: File extension (default: jpg)
+        file_extension: File extension of uploaded file (jpg, jpeg, or png only)
     
     Returns:
         Public URL of the uploaded file
@@ -30,21 +36,69 @@ def upload_student_photo(file_data: bytes, student_id: str, file_extension: str 
     try:
         supabase = get_supabase_client()
         
-        # Create filename: student_id.extension
-        filename = f"{student_id}.{file_extension}"
+        # Convert to lowercase for consistency
+        file_extension = file_extension.lower()
+        
+        # Validate file extension (should already be validated in route, but double-check)
+        if file_extension not in ['jpg', 'jpeg', 'png']:
+            raise ValueError(f"Invalid file extension: {file_extension}. Only jpg, jpeg, png allowed.")
+        
+        # Convert PNG to JPG, keep JPEG as is
+        if file_extension == 'png':
+            try:
+                # Open the PNG image from bytes
+                image = Image.open(BytesIO(file_data))
+                
+                # Convert RGBA to RGB if necessary (PNG with transparency)
+                if image.mode in ('RGBA', 'LA', 'P'):
+                    # Create a white background for transparent PNGs
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    if image.mode == 'RGBA':
+                        # Paste the image using alpha channel as mask
+                        background.paste(image, mask=image.split()[3])
+                    else:
+                        background.paste(image)
+                    image = background
+                elif image.mode != 'RGB':
+                    # Convert to RGB if not already
+                    image = image.convert('RGB')
+                
+                # Convert to JPG bytes
+                output = BytesIO()
+                image.save(output, format='JPEG', quality=95, optimize=True)
+                file_data = output.getvalue()
+                file_extension = 'jpg'
+                print(f"DEBUG: Converted PNG to JPG format")
+                
+            except Exception as conv_error:
+                print(f"Error converting PNG to JPG: {str(conv_error)}")
+                # If conversion fails, still force .jpg extension
+                file_extension = 'jpg'
+        
+        # Handle jpeg -> jpg standardization
+        if file_extension == 'jpeg':
+            file_extension = 'jpg'
+        
+        # ALWAYS use .jpg extension for consistency
+        filename = f"{student_id}.jpg"
         file_path = f"students/{filename}"
         
+        print(f"DEBUG: Uploading file as: {filename}")
+        
         # Upload file to Supabase storage
+        # Use "upsert": "true" to overwrite if exists
         response = supabase.storage.from_(SUPABASE_BUCKET).upload(
             file_path,
             file_data,
-            file_options={"content-type": f"image/{file_extension}", "upsert": "true"}
+            file_options={"content-type": "image/jpeg", "upsert": "true"}
         )
         
         # Get public URL
         public_url = supabase.storage.from_(SUPABASE_BUCKET).get_public_url(file_path)
         
+        print(f"DEBUG: Upload successful, URL: {public_url}")
         return public_url
+        
     except Exception as e:
         raise Exception(f"Failed to upload photo to Supabase: {str(e)}")
 
