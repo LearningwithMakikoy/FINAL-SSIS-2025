@@ -77,4 +77,5 @@ class StudentForm(FlaskForm):
                                   ("Female"), 
                                   ("Other")], 
                         validators=[DataRequired()])
+    remove_photo = HiddenField ('Remove Photo', default = '0' )
     submit = SubmitField("Save")

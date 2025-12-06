@@ -96,8 +96,14 @@
                   <span id="photo-placeholder" class="text-muted small text-center p-2">No photo</span>
                 </div>
                 <div class="flex-grow-1">
-                  <input type="file" id="photo-input" name="photo" accept="image/jpeg,image/jpg,image/png,image/gif" class="form-control form-control-sm">
-                  <small class="text-muted">Max size: 5MB. Formats: JPG, PNG, GIF</small>
+                  <input type="file" id="photo-input" name="photo" accept="image/jpeg,image/jpg,image/png" class="form-control form-control-sm">
+                        <div id="photo-action-buttons" style="display: none;">
+                          <button type="button" id="remove-photo-btn" class="btn btn-outline-danger btn-sm">
+                            <i class="fa fa-trash me-1"></i> Remove Photo
+                          </button>
+                        </div>
+                        <small class="text-muted">Max size: 5MB. Formats: JPG, JPEG, PNG</small>
+                        <input type="hidden" id="remove_photo" name="remove_photo" value="0">
                 </div>
               </div>
             </div>

@@ -318,25 +318,94 @@ document.addEventListener('DOMContentLoaded', function() {
       const photoPreview = document.getElementById('photo-preview');
       const photoPlaceholder = document.getElementById('photo-placeholder');
       const photoInput = document.getElementById('photo-input');
+      const photoActionButtons = document.getElementById('photo-action-buttons');
+      const removePhotoInput = document.getElementById('remove_photo');
+
       if (photoPreview && photoPlaceholder && photoInput) {
         photoPreview.src = '';
         photoPreview.style.display = 'none';
         photoPlaceholder.style.display = 'block';
         photoInput.value = '';
+        
+        // Hide remove button container if it exists
+        if (photoActionButtons) {
+          photoActionButtons.style.display = 'none';
+        }
+        
+        // Reset remove photo flag if it exists
+        if (removePhotoInput) {
+          removePhotoInput.value = '0';
+        }
       }
     }
   }
   
-  // Handle photo preview
+  // Handle photo preview and removal
   const photoInput = document.getElementById('photo-input');
   if (photoInput) {
+    // Initialize photo removal functionality
+    const photoPreview = document.getElementById('photo-preview');
+    const photoPlaceholder = document.getElementById('photo-placeholder');
+    const removePhotoBtn = document.getElementById('remove-photo-btn');
+    const photoActionButtons = document.getElementById('photo-action-buttons');
+    const removePhotoInput = document.getElementById('remove_photo');
+    const previewContainer = document.getElementById('photo-preview-container');
+    const defaultPhotoUrl = 'https://mczkesrlrwuuxyxdigvp.supabase.co/storage/v1/object/public/SSIS/default_profile.jpg';
+    
+    // Remove photo functionality
+    if (removePhotoBtn) {
+      removePhotoBtn.addEventListener('click', function() {
+        // Reset to default
+        if (photoPreview) {
+          photoPreview.src = defaultPhotoUrl;
+          photoPreview.style.display = 'none';
+        }
+        
+        if (photoPlaceholder) {
+          photoPlaceholder.style.display = 'block';
+        }
+        
+        // Hide remove button container
+        if (photoActionButtons) {
+          photoActionButtons.style.display = 'none';
+        }
+        
+        // Clear file input
+        photoInput.value = '';
+        
+        // Set removed flag
+        if (removePhotoInput) {
+          removePhotoInput.value = '1';
+        }
+      });
+    }
+    
+    // Click preview container to trigger file input
+    if (previewContainer) {
+      previewContainer.addEventListener('click', function() {
+        photoInput.click();
+      });
+      
+      // Add hover effect
+      previewContainer.addEventListener('mouseenter', function() {
+        this.style.borderColor = '#007bff';
+        this.style.backgroundColor = '#e9ecef';
+      });
+      
+      previewContainer.addEventListener('mouseleave', function() {
+        this.style.borderColor = '#dee2e6';
+        this.style.backgroundColor = '#f8f9fa';
+      });
+    }
+    
+    // Handle file selection
     photoInput.addEventListener('change', function(e) {
       const file = e.target.files[0];
       if (file) {
         // Validate file type
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
         if (!validTypes.includes(file.type)) {
-          alert('Invalid file type. Please upload JPG, PNG, or GIF.');
+          alert('Invalid file type. Please upload JPG, JPEG, or PNG.');
           e.target.value = '';
           return;
         }
@@ -351,12 +420,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show preview
         const reader = new FileReader();
         reader.onload = function(e) {
-          const photoPreview = document.getElementById('photo-preview');
-          const photoPlaceholder = document.getElementById('photo-placeholder');
           if (photoPreview && photoPlaceholder) {
             photoPreview.src = e.target.result;
             photoPreview.style.display = 'block';
             photoPlaceholder.style.display = 'none';
+            
+            // Show remove button container
+            if (photoActionButtons) {
+              photoActionButtons.style.display = 'block';
+            }
+            
+            // Reset removed flag
+            if (removePhotoInput) {
+              removePhotoInput.value = '0';
+            }
           }
         };
         reader.readAsDataURL(file);
@@ -434,18 +511,25 @@ document.addEventListener('DOMContentLoaded', function() {
           }
         }
         
-        // Set photo preview
+        // Set photo preview and removal state
         const photoPreview = document.getElementById('photo-preview');
         const photoPlaceholder = document.getElementById('photo-placeholder');
         const photoInput = document.getElementById('photo-input');
-        if (photoPreview && photoPlaceholder && photoInput) {
+        const photoActionButtons = document.getElementById('photo-action-buttons');
+        const removePhotoInput = document.getElementById('remove_photo');
+
+        if (photoPreview && photoPlaceholder && photoInput && photoActionButtons && removePhotoInput) {
           if (student.photo_url) {
             photoPreview.src = student.photo_url;
             photoPreview.style.display = 'block';
             photoPlaceholder.style.display = 'none';
+            photoActionButtons.style.display = 'block';
+            removePhotoInput.value = '0'; // Student has photo, not removed
           } else {
             photoPreview.style.display = 'none';
             photoPlaceholder.style.display = 'block';
+            photoActionButtons.style.display = 'none';
+            removePhotoInput.value = '0'; // No photo to remove
           }
           photoInput.value = ''; // Reset file input
         }
@@ -603,6 +687,7 @@ document.addEventListener('DOMContentLoaded', function() {
       console.warn('showAlert failed', e);
     }
   }
+  
   // FORM LOADING FUNCTIONALITY 
   const submitBtn = document.getElementById('submit-btn');
   if (form && submitBtn) {
@@ -645,4 +730,3 @@ document.addEventListener('DOMContentLoaded', function() {
   filteredStudents = students.slice();
   renderTable();
 });
-

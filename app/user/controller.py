@@ -221,6 +221,7 @@ def students():
         first_name = form.first_name.data.strip()
         last_name = form.last_name.data.strip()
         program_code = form.program_id.data or None
+        remove_photo = form.remove_photo.data == '1'
 
         # Handle photo upload if provided
         photo_url = None
@@ -230,8 +231,8 @@ def students():
                 try:
                     # Get file extension
                     file_ext = os.path.splitext(photo_file.filename)[1].lstrip('.')
-                    if file_ext.lower() not in ['jpg', 'jpeg', 'png', 'gif']:
-                        flash("Invalid file type. Please upload JPG, PNG, or GIF.", "danger")
+                    if file_ext.lower() not in ['jpg', 'jpeg', 'png']:
+                        flash("Invalid file type. Please upload JPG, JPEG, or PNG ", "danger")
                         return redirect(url_for('user.students'))
                     
                     # Read file data
@@ -258,7 +259,17 @@ def students():
             
             # Get existing student to preserve photo_url if not updating
             existing_student = Student.get_by_id(old_student_id)
-            if not photo_url and existing_student:
+
+            if remove_photo:
+                if existing_student and existing_student.get('photo_url'):
+                    try:
+                        delete_student_photo(existing_student['photo_url'])
+                    except Exception as e: 
+                        print(f"Error in deleting photo: {str(e)}")
+                photo_url = None # set to none to remove photo
+
+            elif not photo_url and existing_student:
+                #Keep existing photo if not uploaded new one and not removing
                 photo_url = existing_student.get('photo_url')
             
             Student.update(
