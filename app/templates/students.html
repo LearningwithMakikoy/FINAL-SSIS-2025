@@ -175,8 +175,12 @@
 {% block scripts %}
 <script>
   // Pass initial backend data to JS
-  window.INIT_STUDENTS = {{ (students or []) | tojson | safe }};
-  window.INIT_PROGRAMS = {{ (programs or []) | tojson | safe }};
+  window.INIT_STUDENTS = {{ all_students|tojson }};  <!-- Use all_students instead of students -->
+  window.INIT_SORT_BY = "{{ sort_by|default('id') }}";
+  window.INIT_SORT_DIR = "{{ sort_dir|default('asc') }}";
+  window.INIT_PAGE = {{ page|default(1) }};
+  window.INIT_PER_PAGE = {{ per_page|default(30) }};
+  window.INIT_TOTAL = {{ total|default(0) }};
 </script>
 <script src="{{ url_for('static', filename='js/students.js') }}"></script>
 {% endblock %}

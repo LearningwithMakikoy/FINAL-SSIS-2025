@@ -101,7 +101,12 @@
 
 {% block scripts %}
 <script>
-  window.INIT_COLLEGES = {{ (colleges or []) | tojson | safe }};
+  window.INIT_COLLEGES = {{ all_colleges|tojson }};
+  window.INIT_SORT_BY = "{{ sort_by|default('name') }}";
+  window.INIT_SORT_DIR = "{{ sort_dir|default('asc') }}";
+  window.INIT_PAGE = {{ page|default(1) }};
+  window.INIT_PER_PAGE = {{ per_page|default(30) }};
+  window.INIT_TOTAL = {{ total|default(0) }};
 </script>
 <script src="{{ url_for('static', filename='js/colleges.js') }}"></script>
 {% endblock %}

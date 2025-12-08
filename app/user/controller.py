@@ -126,13 +126,43 @@ def programs():
 
         flash("Program saved successfully.", "success")
         return redirect(url_for('user.programs'))
+    
+    #for the sorted searchby and paginated
+    # GET REQUEST: Get filtered, sorted, and paginated programs
+    search = request.args.get('search', '', type=str)
+    sort_by = request.args.get('sort_by', 'name', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 30, type=int)
 
-    programs_list = Program.all()
+    programs_list, total = Program.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        per_page=per_page
+    )
+    
+        # Get ALL data (without pagination) for JavaScript
+    all_programs, _ = Program.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=1,
+        per_page=1000  
+    )
+
     return render_template('programs.html',
                            form=form,
                            programs=programs_list,
-                           colleges=colleges)
-
+                           colleges=colleges,
+                           search=search,
+                           sort_by=sort_by,
+                           sort_dir=sort_dir,
+                           page=page,
+                           per_page=per_page,
+                           total=total,
+                           all_programs=all_programs)
 
 @bp.route('/programs/delete/<string:code>', methods=['POST'])
 @login_required
@@ -145,6 +175,33 @@ def delete_program(code):
     Program.delete(code)
     return jsonify(success=True, message="Program deleted")
 
+#call the backend functions for search sort and pagination
+@bp.route('/api/programs')
+@login_required
+def api_programs():
+    """API endpoint for AJAX requests to get filtered programs data"""
+    # Read query parameters
+    search = request.args.get('search', '', type=str)
+    sort_by = request.args.get('sort_by', 'name', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 30, type=int)
+
+    # Fetch from model
+    data, total = Program.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        per_page=per_page
+    )
+
+    return jsonify({
+        "data": data,
+        "total": total,
+        "page": page,
+        "per_page": per_page
+    })
 
 
 # COLLEGE ROUTES
@@ -184,10 +241,39 @@ def colleges():
         flash("College saved successfully.", "success")
         return redirect(url_for('user.colleges'))
 
-    colleges_list = College.all()
+    # GET REQUEST: Get filtered, sorted, and paginated colleges
+    search = request.args.get('search', '', type=str)
+    sort_by = request.args.get('sort_by', 'name', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 30, type=int)
+
+    colleges_list, total = College.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        per_page=per_page
+    )
+    # Get ALL data (without pagination) for JavaScript
+    all_colleges, _ = College.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=1,
+        per_page=10000  # Large number to get all matching records
+    )
+    
     return render_template('colleges.html',
                            form=form,
-                           colleges=colleges_list)
+                           colleges=colleges_list,
+                           search=search,
+                           sort_by=sort_by,
+                           sort_dir=sort_dir,
+                           page=page,
+                           per_page=per_page,
+                           total=total,
+                           all_colleges=all_colleges)
 
 
 @bp.route('/colleges/delete/<string:code>', methods=['POST'])
@@ -201,6 +287,32 @@ def delete_college(code):
     College.delete(code)
     return jsonify(success=True, message="College deleted")
 
+@bp.route('/api/colleges')
+@login_required
+def api_colleges():
+    """API endpoint for AJAX requests to get filtered colleges data"""
+    # Read query parameters
+    search = request.args.get('search', '', type=str)
+    sort_by = request.args.get('sort_by', 'name', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 30, type=int)
+
+    # Fetch from model
+    data, total = College.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        per_page=per_page
+    )
+
+    return jsonify({
+        "data": data,
+        "total": total,
+        "page": page,
+        "per_page": per_page
+    })
 
 
 # STUDENT ROUTES
@@ -302,26 +414,41 @@ def students():
         flash("Student saved successfully.", "success")
         return redirect(url_for('user.students'))
 
-    students_list = Student.all()
-    # Transform student data to match frontend expectations
-    students_list = [
-        {
-            'id': s['id'],
-            'id_number': s['id'],
-            'first_name': s['firstname'],
-            'last_name': s['lastname'],
-            'program': s['program_name'] or s['course'] or '',
-            'course': s['course'],
-            'year': s['year'],
-            'gender': s['gender'],
-            'photo_url': s.get('photo_url') or ''
-        }
-        for s in students_list
-    ]
+
+    #search, sorted, and paginated students
+    search = request.args.get('search', '', type=str)
+    sort_by = request.args.get('sort_by', 'id', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 30, type=int) 
+
+    # filter
+    students_list, total = Student.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        per_page=per_page
+    )
+    all_students, _ = Student.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=1,
+        per_page=10000 
+    )
+    
     return render_template('students.html',
                            form=form,
                            students=students_list,
-                           programs=programs)
+                           programs=programs,
+                           search=search,
+                           sort_by=sort_by,
+                           sort_dir=sort_dir,
+                           page=page,
+                           per_page=per_page,
+                           total=total,
+                           all_students=all_students)
 
 
 @bp.route('/students/delete/<string:student_id>', methods=['POST'])
@@ -401,3 +528,30 @@ def upload_student_photo_route(student_id):
         return jsonify(success=True, message="Photo uploaded successfully", photo_url=photo_url)
     except Exception as e:
         return jsonify(success=False, message=f"Error uploading photo: {str(e)}"), 500
+
+
+@bp.route('/api/students')
+@login_required
+def api_students():
+    # Read query parameters
+    search = request.args.get('search', '', type=str)
+    sort_by = request.args.get('sort_by', 'id', type=str)
+    sort_dir = request.args.get('sort_dir', 'asc', type=str)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 30, type=int)
+
+    # Fetch from model
+    data, total = Student.get_filtered(
+        search=search,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        page=page,
+        per_page=per_page
+    )
+
+    return jsonify({
+        "data": data,
+        "total": total,
+        "page": page,
+        "per_page": per_page
+    })

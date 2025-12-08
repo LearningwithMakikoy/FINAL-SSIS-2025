@@ -1,4 +1,3 @@
-# app/user/__init__.py
 from flask import Blueprint
 
 bp = Blueprint(
