@@ -2,7 +2,8 @@ import os
 from flask import Flask, render_template
 from flask_login import LoginManager
 from dotenv import load_dotenv
-from app.models import User  # psycopg2 model
+from app.user.models import User
+
 
 # Load environment variables
 load_dotenv()
@@ -13,7 +14,7 @@ login_manager.login_view = "user.login"   # redirect if not logged in
 
 
 def create_app():
-    """App factory using psycopg2 (no SQLAlchemy)."""
+    """App factory using psycopg2"""
     app = Flask(
         __name__,
         template_folder="templates",
@@ -31,8 +32,19 @@ def create_app():
         return User.get_by_id(user_id)
 
     # ---- BLUEPRINTS ----
-    from .user import bp as user_bp
-    app.register_blueprint(user_bp, url_prefix="/user")
+    # Import blueprints here to avoid circular imports
+    from app.user import bp
+    from app.students import student_bp
+    from app.colleges import college_bp
+    from app.programs import program_bp
+  
+    
+    # Register blueprints with appropriate URL prefixes
+    app.register_blueprint(student_bp, url_prefix="/student")      # Routes: /students/*
+    app.register_blueprint(college_bp, url_prefix="/college")      # Routes: /colleges/*
+    app.register_blueprint(program_bp, url_prefix="/program")      # Routes: /programs/*
+    app.register_blueprint(bp, url_prefix="/user")         # Routes: /* (root level)
+    
 
     # ---- MAIN ROUTE ----
     @app.route("/")
