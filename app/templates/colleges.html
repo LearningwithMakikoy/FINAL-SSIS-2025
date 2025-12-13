@@ -17,19 +17,7 @@
     </button>
   </div>
 
-  <!-- Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="mb-3 mx-auto" style="max-width: 600px;">
-        {% for category, msg in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ msg }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
+
 
   <!-- Table -->
   <div class="card mx-auto" style="max-width:1000px;">

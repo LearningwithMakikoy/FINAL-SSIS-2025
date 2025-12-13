@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!prog) return;
       if (!confirm(`Delete program ${prog.name}?`)) return;
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
-      fetch(`/user/programs/delete/${prog.code}`, {
+      fetch(`/program/delete/${prog.code}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

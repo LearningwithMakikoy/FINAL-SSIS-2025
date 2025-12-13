@@ -457,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (action === 'delete') {
       if (!confirm(`Delete student ${student.first_name} ${student.last_name}?`)) return;
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
-      fetch(`/user/students/delete/${student.id}`, {
+      fetch(`/student/delete/${student.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -142,7 +142,7 @@
     if (!confirm(`Delete ${student.first_name} ${student.last_name} (${student.id_number})?`)) return;
     // call server delete endpoint (uses CSRF token from the page)
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
-    fetch(`/user/students/delete/${id}`, {
+    fetch(`/student/delete/${id}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

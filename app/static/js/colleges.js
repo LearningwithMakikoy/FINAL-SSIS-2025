@@ -215,8 +215,10 @@ document.addEventListener('DOMContentLoaded', function() {
       const college = filteredColleges[index];
       if (!college) return;
       if (!confirm(`Delete college ${college.name}?`)) return;
+      
+      // CHANGED: URL from '/user/colleges/delete/' to '/colleges/delete/'
       const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
-      fetch(`/user/colleges/delete/${college.code}`, {
+      fetch(`/college/delete/${college.code}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,6 +314,11 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('load', function() {
       resetSubmitButton();
     });
+    
+    function resetSubmitButton() {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnHtml;
+    }
   }
 
 

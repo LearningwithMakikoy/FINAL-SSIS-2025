@@ -62,19 +62,7 @@
     </nav>
   </header>
 
-  <!-- Flash messages -->
-  <div class="container mt-3">
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, msg in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ msg }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-  </div>
+
 
   <!-- Main Content -->
   <main class="container py-5 flex-grow-1">

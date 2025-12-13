@@ -27,17 +27,7 @@
 
   </div>
 
-  <!-- Flash Messages -->
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="mb-3">
-        {% for category, msg in messages %}
-          <div class="alert alert-{{ category }}" role="alert">{{ msg }}</div>
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
+ 
   <!-- Table -->
   <div class="card mx-auto" style="max-width:1000px;">
     <div class="card-body p-0">
