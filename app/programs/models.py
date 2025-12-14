@@ -125,7 +125,19 @@ class Program:
         conn = get_connection()
         cur = conn.cursor()
         try:
-            # First update any foreign key references (students that reference this program)
+            # Check if new code already exists (different program with same code)
+            cur.execute("SELECT code FROM program WHERE code = %s AND code != %s;", 
+                       (new_code, old_code))
+            if cur.fetchone():
+                raise ValueError(f"Program code '{new_code}' already exists")
+            
+            # Create the new program with new code
+            cur.execute("""
+                INSERT INTO program (code, name, college)
+                VALUES (%s, %s, %s);
+            """, (new_code, name, college))
+
+            # Update any foreign key references (students that reference this program)
             cur.execute("""
                 UPDATE student
                 SET course = %s
@@ -134,12 +146,6 @@ class Program:
             
             # Delete the old program
             cur.execute("DELETE FROM program WHERE code = %s;", (old_code,))
-            
-            # Create the new program with new code
-            cur.execute("""
-                INSERT INTO program (code, name, college)
-                VALUES (%s, %s, %s);
-            """, (new_code, name, college))
             
             conn.commit()
         except Exception as e:

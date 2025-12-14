@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, flash
-from flask_login import login_required, login_user, logout_user
+from flask_login import login_required, login_user, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import bp
 from .forms import SignupForm, LoginForm
@@ -15,6 +15,13 @@ def index():
 # AUTH ROUTES
 @bp.route('/signup', methods=['GET', 'POST'])
 def signup():
+
+    """User registration"""
+    # If user is already logged in, redirect to index
+    if current_user.is_authenticated:
+        flash("You are already logged in!", "info")
+        return redirect(url_for('user.index'))
+    
     form = SignupForm()
 
     if form.validate_on_submit():
@@ -38,14 +45,27 @@ def signup():
         hashed_pw = generate_password_hash(password)
         new_user = User.create(username, email, hashed_pw)
 
-        flash("Account created! You may now log in.", "success")
-        return redirect(url_for('user.login'))
+        if new_user:
+            # Auto-login the user after successful signup
+            login_user(new_user)
+            flash("Account created successfully! Welcome!", "success")
+            return redirect(url_for('user.index'))  # Logs in AND redirects
+        else:
+        # Failure - show error
+            flash("Error creating account. Please try again.", "danger")
+            return redirect(url_for('user.signup'))
 
     return render_template('signup.html', form=form)
 
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
+
+    """User login"""
+    # If user is already logged in, redirect to index
+    if current_user.is_authenticated:
+        flash("You are already logged in!", "info")
+        return redirect(url_for('user.index'))
     form = LoginForm()
 
     if form.validate_on_submit():

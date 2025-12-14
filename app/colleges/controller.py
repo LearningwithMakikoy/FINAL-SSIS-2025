@@ -26,19 +26,22 @@ def colleges():
                     return redirect(url_for('college.colleges'))
                 # Update with new code (delete old, create new)
                 College.update_code(old_code, code, name)
+                flash(f"College updated from '{old_code}' to '{code}' successfully.", "success")
             else:
                 # Just update the name
                 College.update(code, name)
-        else:  # Creating
-            # Check if code already exists
+                flash(f"College updated successfully.", "success")
+        else:  # Creating new college
             existing = College.get_by_code(code)
+            # Check if code already exists
             if existing:
                 flash(f"College code '{code}' already exists.", "danger")
                 return redirect(url_for('college.colleges'))
             College.create(code, name)
-
-        flash("College saved successfully.", "success")
+            flash(f"College created successfully.", "success")
+        
         return redirect(url_for('college.colleges'))
+
 
     # GET REQUEST: Get filtered, sorted, and paginated colleges
     search = request.args.get('search', '', type=str)

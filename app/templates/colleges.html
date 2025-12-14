@@ -5,7 +5,21 @@
 <div class="container align-self-start py-4">
 
   <h3 class="text-center mb-4">College Details</h3>
-
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3 mx-auto" style="max-width: 600px;">
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+  
+  
   <!-- Search + Add -->
   <div class="d-flex justify-content-center mb-3 gap-3 flex-column flex-sm-row align-items-center">
     <div style="min-width:260px; max-width:420px; width:40%">
@@ -89,12 +103,24 @@
 
 {% block scripts %}
 <script>
+  // Auto-dismiss flash messages
+document.addEventListener('DOMContentLoaded', function() {
+  const alerts = document.querySelectorAll('.alert.alert-dismissible');
+  alerts.forEach(alert => {
+    setTimeout(() => {
+      const closeBtn = alert.querySelector('.btn-close');
+      if (closeBtn) closeBtn.click();
+    }, 2000);
+  });
+});
+
   window.INIT_COLLEGES = {{ all_colleges|tojson }};
   window.INIT_SORT_BY = "{{ sort_by|default('name') }}";
   window.INIT_SORT_DIR = "{{ sort_dir|default('asc') }}";
   window.INIT_PAGE = {{ page|default(1) }};
   window.INIT_PER_PAGE = {{ per_page|default(30) }};
   window.INIT_TOTAL = {{ total|default(0) }};
+
 </script>
 <script src="{{ url_for('static', filename='js/colleges.js') }}"></script>
 {% endblock %}

@@ -12,7 +12,7 @@ import traceback
 
 # STUDENT ROUTES
 
-@student_bp.route('/students', methods=['GET', 'POST'])
+@student_bp.route('', methods=['GET', 'POST'])
 @login_required
 def students():
     form = StudentForm()
@@ -30,7 +30,24 @@ def students():
         program_code = form.program_id.data or None
         remove_photo = form.remove_photo.data == '1'
 
-        # Handle photo upload if provided
+        # Check for duplicate ID BEFORE uploading photo
+        if form.id.data:  # Editing existing student
+            old_student_id = form.id.data.strip()
+            
+            # Check if student ID already exists (if changed)
+            if old_student_id != student_id:
+                existing = Student.get_by_id(student_id)
+                if existing:
+                    flash(f"Student ID '{student_id}' already exists.", "danger")
+                    return redirect(url_for('student.students'))
+        else:  # Creating new student
+            # Check if student ID already exists
+            existing = Student.get_by_id(student_id)
+            if existing:
+                flash(f"Student ID '{student_id}' already exists.", "danger")
+                return redirect(url_for('student.students'))
+
+        # Handle photo upload if provided - ONLY AFTER checking for duplicates
         photo_url = None
         if 'photo' in request.files:
             photo_file = request.files['photo']
@@ -56,13 +73,6 @@ def students():
 
         if form.id.data:  # Editing existing student
             old_student_id = form.id.data.strip()
-            
-            # Check if student ID already exists (if changed)
-            if old_student_id != student_id:
-                existing = Student.get_by_id(student_id)
-                if existing:
-                    flash(f"Student ID '{student_id}' already exists.", "danger")
-                    return redirect(url_for('student.students'))
             
             # Get existing student to preserve photo_url if not updating
             existing_student = Student.get_by_id(old_student_id)
@@ -90,12 +100,6 @@ def students():
                 photo_url
             )
         else:  # Creating new student
-            # Check if student ID already exists
-            existing = Student.get_by_id(student_id)
-            if existing:
-                flash(f"Student ID '{student_id}' already exists.", "danger")
-                return redirect(url_for('student.student'))
-            
             Student.create(
                 student_id,
                 first_name,
@@ -146,7 +150,7 @@ def students():
                            all_students=all_students)
 
 
-@student_bp.route('/students/delete/<string:student_id>', methods=['POST'])
+@student_bp.route('/delete/<string:student_id>', methods=['POST'])
 @login_required
 def delete_student(student_id):
     st = Student.get_by_id(student_id)
@@ -164,7 +168,7 @@ def delete_student(student_id):
     return jsonify(success=True, message="Student deleted")
 
 
-@student_bp.route('/students/upload-photo/<string:student_id>', methods=['POST'])
+@student_bp.route('/upload-photo/<string:student_id>', methods=['POST'])
 @login_required
 def upload_student_photo_route(student_id):
     """API endpoint to upload student photo separately."""
@@ -225,7 +229,7 @@ def upload_student_photo_route(student_id):
         return jsonify(success=False, message=f"Error uploading photo: {str(e)}"), 500
 
 
-@student_bp.route('/api/students')
+@student_bp.route('/api')
 @login_required
 def api_students():
     # Read query parameters

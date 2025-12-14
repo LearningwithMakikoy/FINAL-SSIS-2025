@@ -4,6 +4,20 @@
 {% block content %}
 <div class="container align-self-start py-4">
 
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="mb-3 mx-auto" style="max-width:600px;">
+    {% for category, msg in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+  
   <h3 class="text-center mb-4">Program Details</h3>
 
   <!-- Search + Add -->
@@ -107,6 +121,16 @@
 <!-- Backend → JS Data -->
 {% block scripts %}
 <script>
+    // Auto-dismiss flash messages
+document.addEventListener('DOMContentLoaded', function() {
+  const alerts = document.querySelectorAll('.alert.alert-dismissible');
+  alerts.forEach(alert => {
+    setTimeout(() => {
+      const closeBtn = alert.querySelector('.btn-close');
+      if (closeBtn) closeBtn.click();
+    }, 2000);
+  });
+});
   // Initialize programs and colleges from backend for JS table handling
   window.INIT_PROGRAMS = {{ all_programs|tojson }};
   window.INIT_SORT_BY = "{{ sort_by|default('name') }}";

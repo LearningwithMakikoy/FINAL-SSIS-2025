@@ -4,6 +4,17 @@
 {% block content %}
 <div class="container text-center align-self-start py-4">
 
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-3">
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }}" role="alert">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %} 
+  
   <!-- Header Row -->
   <div class="row align-items-center mb-4">
 
@@ -164,6 +175,16 @@
 
 {% block scripts %}
 <script>
+// Auto-dismiss flash messages
+document.addEventListener('DOMContentLoaded', function() {
+  const alerts = document.querySelectorAll('.alert.alert-dismissible');
+  alerts.forEach(alert => {
+    setTimeout(() => {
+      const closeBtn = alert.querySelector('.btn-close');
+      if (closeBtn) closeBtn.click();
+    }, 2000);
+  });
+});
   // Pass initial backend data to JS
   window.INIT_STUDENTS = {{ all_students|tojson }};  <!-- Use all_students instead of students -->
   window.INIT_SORT_BY = "{{ sort_by|default('id') }}";
