@@ -154,3 +154,42 @@ class Student:
         cur.close()
         conn.close()
 
+    @staticmethod
+    def all_filtered(program=None, year=None, gender=None, search=None):
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+       
+        query = """
+            SELECT s.id, s.firstname, s.lastname, s.course, s.year, s.gender, s.photo_url,
+                   p.name AS program_name
+            FROM student s
+            LEFT JOIN program p ON s.course = p.code
+            WHERE 1=1
+        """
+        params = []
+       
+        # Apply filters
+        if program:
+            query += " AND s.course = %s"
+            params.append(program)
+       
+        if year:
+            query += " AND s.year = %s"
+            params.append(year)
+       
+        if gender:
+            query += " AND s.gender = %s"
+            params.append(gender)
+       
+        if search:
+            search_term = f"%{search}%"
+            query += " AND (s.id ILIKE %s OR s.firstname ILIKE %s OR s.lastname ILIKE %s OR s.course ILIKE %s OR p.name ILIKE %s)"
+            params.extend([search_term, search_term, search_term, search_term, search_term])
+       
+        query += " ORDER BY s.id"
+       
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows

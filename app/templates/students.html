@@ -38,6 +38,58 @@
 
   </div>
 
+
+  <!-- Filter Row -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body p-3">
+          <form id="filterForm" class="row g-3 justify-content-center">
+            <div class="col-md-3">
+              <label for="filter-program" class="form-label">Program/Course</label>
+              <select id="filter-program" class="form-select">
+                <option value="">All Programs</option>
+                {% for program in programs %}
+                <option value="{{ program.code }}">{{ program.code }} - {{ program.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+
+            <div class="col-md-2">
+              <label for="filter-year" class="form-label">Year Level</label>
+              <select id="filter-year" class="form-select">
+                <option value="">All Years</option>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+              </select>
+            </div>
+
+
+            <div class="col-md-2">
+              <label for="filter-gender" class="form-label">Gender</label>
+              <select id="filter-gender" class="form-select">
+                <option value="">All Genders</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+
+            <div class="col-md-3 d-flex align-items-end">
+              <button type="button" id="btn-clear-filters" class="btn btn-outline-secondary">
+                Clear Filters
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
  
   <!-- Table -->
   <div class="card mx-auto" style="max-width:1000px;">

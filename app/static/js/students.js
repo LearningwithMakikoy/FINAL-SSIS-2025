@@ -3,6 +3,10 @@ document.addEventListener('DOMContentLoaded', function() {
   const tbody = document.getElementById('students-table-body');
   const searchInput = document.getElementById('student-search');
   const paginationEl = document.querySelector('.pagination');
+  const filterProgram = document.getElementById('filter-program');
+  const filterYear = document.getElementById('filter-year');
+  const filterGender = document.getElementById('filter-gender');
+  const clearFiltersBtn = document.getElementById('btn-clear-filters');
   let students = window.INIT_STUDENTS || [];
   let filteredStudents = students.slice();
   let editIndex = null;
@@ -126,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <td>${escapeHtml(String(s.year || ''))}</td>
         <td>${escapeHtml(s.gender || '')}</td>
         <td>
-          <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+          <div class="d-flex gap-2">
             <button class="btn btn-sm btn-outline-primary" data-student-id="${escapeHtml(s.id)}" data-action="edit">Edit</button>
             <button class="btn btn-sm btn-outline-danger" data-student-id="${escapeHtml(s.id)}" data-action="delete">Delete</button>
           </div>
@@ -543,19 +547,46 @@ document.addEventListener('DOMContentLoaded', function() {
   // Handle search
   if (searchInput) {
     searchInput.addEventListener('input', function() {
-      const q = this.value.toLowerCase();
-      filteredStudents = students.filter(s => {
-        const firstName = (s.first_name || '').toLowerCase();
-        const lastName = (s.last_name || '').toLowerCase();
-        const idNumber = (s.id_number || s.id || '').toLowerCase();
-        const program = (s.program || s.course || '').toLowerCase();
-        return firstName.includes(q) || 
-               lastName.includes(q) || 
-               idNumber.includes(q) ||
-               program.includes(q);
-      });
-      currentPage = 1; // Reset to first page when searching
-      renderTable();
+        const q = this.value.toLowerCase();
+        
+        if (!q) {
+            // If search is empty, just apply the current filters
+            applyFilters();
+            return;
+        }
+        
+        // First apply the dropdown filters to get base filtered list
+        const programVal = (filterProgram?.value || "").toLowerCase();
+        const yearVal = (filterYear?.value || "").toLowerCase();
+        const genderVal = (filterGender?.value || "").toLowerCase();
+        
+        let baseFiltered = students.filter(s => {
+            const program = (s.program || s.course || s.program_id || "").toLowerCase();
+            const year = String(s.year || "").toLowerCase();
+            const gender = (s.gender || "").toLowerCase();
+
+            const programMatch = !programVal || program === programVal || (s.course && s.course.toLowerCase().includes(programVal));
+            const yearMatch = !yearVal || year === yearVal;
+            const genderMatch = !genderVal || gender === genderVal;
+
+            return programMatch && yearMatch && genderMatch;
+        });
+        
+        // Then search within that filtered list
+        filteredStudents = baseFiltered.filter(s => {
+            const firstName = (s.first_name || '').toLowerCase();
+            const lastName = (s.last_name || '').toLowerCase();
+            const idNumber = (s.id_number || s.id || '').toLowerCase();
+            const program = (s.program || s.course || '').toLowerCase();
+            return firstName.includes(q) || 
+                   lastName.includes(q) || 
+                   idNumber.includes(q) ||
+                   program.includes(q);
+        });
+        
+        console.log(`Searched from ${baseFiltered.length} to ${filteredStudents.length} students`);
+        currentPage = 1; // Reset to first page when searching
+        renderTable();
     });
   }
 
@@ -725,6 +756,86 @@ document.addEventListener('DOMContentLoaded', function() {
       submitBtn.innerHTML = originalBtnHtml;
     }
   }
+
+   
+function applyFilters() {
+    console.log('Applying filters...');
+   
+    const programVal = (filterProgram?.value || "").toLowerCase();
+    const yearVal = (filterYear?.value || "").toLowerCase();
+    const genderVal = (filterGender?.value || "").toLowerCase();
+
+    console.log('Filter values:', {
+        program: programVal,
+        year: yearVal,
+        gender: genderVal
+    });
+
+    filteredStudents = students.filter(s => {
+        const program = (s.program || s.course || s.program_id || "").toLowerCase();
+        const year = String(s.year || "").toLowerCase();
+        const gender = (s.gender || "").toLowerCase();
+
+        const programMatch = !programVal || program === programVal || (s.course && s.course.toLowerCase().includes(programVal));
+        const yearMatch = !yearVal || year === yearVal;
+        const genderMatch = !genderVal || gender === genderVal;
+
+        return programMatch && yearMatch && genderMatch;
+    });
+
+    console.log(`Filtered from ${students.length} to ${filteredStudents.length} students`);
+    currentPage = 1;
+    renderTable();
+}
+
+
+  function clearAllFilters() {
+    console.log('Clearing all filters');
+   
+    // Reset all filter inputs
+    if (filterProgram) filterProgram.value = '';
+    if (filterYear) filterYear.value = '';
+    if (filterGender) filterGender.value = '';
+    if (searchInput) searchInput.value = '';
+   
+    // Reset to show all students
+    filteredStudents = students.slice();
+
+
+   
+    currentPage = 1;
+    renderTable();
+
+
+
+
+  }
+
+
+  // ============ EVENT LISTENER SETUP ============
+
+  // Setup filter event listeners
+  if (filterProgram) {
+    filterProgram.addEventListener("change", applyFilters);
+  }
+
+
+  if (filterYear) {
+    filterYear.addEventListener("change", applyFilters);
+  }
+
+
+  if (filterGender) {
+    filterGender.addEventListener("change", applyFilters);
+  }
+
+
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener("click", clearAllFilters);
+    console.log('Clear Filters button event listener added');
+  }
+
+
 
   // Initialize filtered students and render
   filteredStudents = students.slice();

@@ -112,7 +112,20 @@ def students():
 
         flash("Student saved successfully.", "success")
         return redirect(url_for('student.students'))
-
+        
+        # Get filter parameters from request
+    filter_program = request.args.get('program', '')
+    filter_year = request.args.get('year', '')
+    filter_gender = request.args.get('gender', '')
+    search_query = request.args.get('search', '')
+   
+    # Get all students with filtering
+    students_list = Student.all_filtered(
+        program=filter_program if filter_program else None,
+        year=filter_year if filter_year else None,
+        gender=filter_gender if filter_gender else None,
+        search=search_query if search_query else None
+        )    
 
     #search, sorted, and paginated students
     search = request.args.get('search', '', type=str)
@@ -148,6 +161,8 @@ def students():
                            per_page=per_page,
                            total=total,
                            all_students=all_students)
+
+
 
 
 @student_bp.route('/delete/<string:student_id>', methods=['POST'])
